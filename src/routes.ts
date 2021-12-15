@@ -6,34 +6,34 @@ import Edge from './logic/Edge';
 import Game from './logic/Game';
 import Point from './logic/Point';
 import BotPlayer from './logic/BotPlayer';
+import { WaitingListService } from './service/WaitingListService';
 
-let socketServer:any;
+let socketServer: any;
 
 const routes = Router();
 
 const game: Game = new Game();
-let lastPlayTimestamp:number = -1;
+let lastPlayTimestamp: number = -1;
 
-const waitingList: Player[] = [];
-waitingList.push(new BotPlayer());
+const waitingList: WaitingListService = new WaitingListService();
 
 const INITIAL_ID: number = 1;
 let IDVAL: number = INITIAL_ID;
 
-const TWO_DEAD_PLAYERS:number = 0;
-const ONE_DEAD_PLAYER:number = 1;
+const TWO_DEAD_PLAYERS: number = 0;
+const ONE_DEAD_PLAYER: number = 1;
 
 const deadPlayerChecker = setInterval(function () {
-    if ((game.isReady()===false)&&(!game.isInProgress())) return;
+    if ((game.isReady() === false) && (!game.isInProgress())) return;
 
-    let elapsedTimestamp:number;
-    let situation:number;
-    const currTimestamp:number = (new Date()).getTime();
-    if (game.getLastPlayTimestamp()<0) {
+    let elapsedTimestamp: number;
+    let situation: number;
+    const currTimestamp: number = (new Date()).getTime();
+    if (game.getLastPlayTimestamp() < 0) {
         elapsedTimestamp = currTimestamp - game.getStartTimestamp();
-        situation=TWO_DEAD_PLAYERS;
+        situation = TWO_DEAD_PLAYERS;
 
-        broadCast('test',{
+        broadCast('test', {
             message: 'TWO DEAD PLAYERS',
             gameStart: game.getStartTimestamp(),
             lastPlayTimestamp: game.getLastPlayTimestamp(),
@@ -41,9 +41,9 @@ const deadPlayerChecker = setInterval(function () {
         });
     } else {
         elapsedTimestamp = currTimestamp - game.getLastPlayTimestamp();
-        situation=ONE_DEAD_PLAYER;
+        situation = ONE_DEAD_PLAYER;
 
-        broadCast('test',{
+        broadCast('test', {
             message: 'ONE DEAD PLAYERS',
             gameStart: game.getStartTimestamp(),
             lastPlayTimestamp: game.getLastPlayTimestamp(),
@@ -80,13 +80,13 @@ routes.post('/register', (req, res) => {
         let roomPass: string = 'GameRoom';
 
         if ((game.isReady()) || (game.isInProgress())) {
-            waitingList.push(new Player(newPlayerId, newPlayerName));
+            waitingList.add(new Player(newPlayerId, newPlayerName));
             broadCast(
                 'waitingRoomUpdate',
-                createWaitingRoomUpdateJSON(waitingList)
-            );    
+                createWaitingRoomUpdateJSON(waitingList.getAll())
+            );
         } else { // Waiting for a player
-            player1 = waitingList.shift()!; // Exclamation says I´m sure this is not undefined
+            player1 = waitingList.getFirst();
             player2 = new Player(newPlayerId, newPlayerName);
             game.addPlayer(player1);
             game.addPlayer(player2);
@@ -121,7 +121,7 @@ function createGameSetup() {
         score_player2: setup.score_player2,
         turn: setup.turn,
         gameOver: setup.gameOver,
-        waitinglist: waitingList
+        waitinglist: waitingList.getAll()
     });
 }
 
@@ -146,7 +146,7 @@ routes.get('/waitingroom', (req, res) => {
         'gameStatus': game.getStatus(),
         'player1': player1name,
         'player2': player2name,
-        'waitingList': waitingList
+        'waitingList': waitingList.getAll()
     });
 });
 
@@ -221,17 +221,17 @@ function handleGameOver(req: any, playResult: any) {
     const winner = game.getWinner();
     const looser = game.getLooser();
 
-    if (waitingList.length > 0) {
+    if (waitingList.getLength() > 0) {
         // Add looser to waiting list
-        waitingList.push(looser);
+        waitingList.add(looser);
         // Prepare new game
-        let playerInvited = waitingList.shift()!;
+        let playerInvited = waitingList.getFirst();
         if (winner != null) {
             game.newGame(winner, playerInvited);
         }
         // Keep winner in game room and send looser to the waiting room
         playResult.whatsNext = createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-        broadcastNewGame(playerInvited,waitingList,false);
+        broadcastNewGame(playerInvited, waitingList.getAll(), false);
     } else {
         // Start a new game with same players
         game.newGame(winner!, looser);
@@ -239,24 +239,24 @@ function handleGameOver(req: any, playResult: any) {
     }
 }
 
-function handleGameOverByDeadPlayer(situation:number) {
+function handleGameOverByDeadPlayer(situation: number) {
     console.log('DEAD PLAYER DETECTED!!!');
-    const p1:Player = game.players[0];
-    const p2:Player = game.players[1];
+    const p1: Player = game.players[0];
+    const p2: Player = game.players[1];
 
     if (game.isBotGame()) {
-        if (waitingList.length>0) {
-            let firstInWaitingList = waitingList.shift()!;
+        if (waitingList.getLength() > 0) {
+            let firstInWaitingList = waitingList.getFirst();
             game.newGame(p1, firstInWaitingList);
-            broadcastNewGame(firstInWaitingList,waitingList,true);
+            broadcastNewGame(firstInWaitingList, waitingList.getAll(), true);
         } else {
-            waitingList.push(p1);
+            waitingList.add(p1);
             game.reset();
-            broadCast('emptyGameRoom',{});
+            broadCast('emptyGameRoom', {});
         }
     } else {
         //TODO Refactor solution to answer: Who did the last move?
-        if (waitingList.length>0) {
+        if (waitingList.getLength() > 0) {
             //TODO Start new game between the player who did the last move and first in the waitinglist
         } else {
             //TODO Start new game between bot and the player who did the last move
@@ -264,7 +264,7 @@ function handleGameOverByDeadPlayer(situation:number) {
     }
 }
 
-function broadcastNewGame(playerInvited:Player, waitingList:Player[], reloadClient:boolean) {
+function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
     // Invite first in waiting room to game room
     broadCast('enterGameRoom', {
         'invitationForPlayer': playerInvited.id,
@@ -305,7 +305,7 @@ function broadCast(message: string, info: any) {
 
 routes.get('/reset', (req, res) => {
     console.log('routes: before reset' + game.players);
-    waitingList.length = 0;
+    waitingList.reset();
     game.reset();
     console.log('routes: after reset' + game.players);
     return res.status(201);
@@ -315,7 +315,7 @@ function disconnectHandler() {
     console.log('Routes - A client disconnected');
 }
 
-export default function(SocketIO:any) {
+export default function (SocketIO: any) {
     socketServer = SocketIO.io;
     SocketIO.setDisconnectListener(disconnectHandler);
     return routes;
