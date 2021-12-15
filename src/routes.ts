@@ -8,56 +8,17 @@ import Point from './logic/Point';
 import BotPlayer from './logic/BotPlayer';
 import { WaitingListService } from './service/WaitingListService';
 import { RegisterController } from './RegisterController';
+import { GameService } from './service/GameService';
 
 let socketServer: any;
 
 const routes = Router();
 
-const game: Game = new Game();
-let lastPlayTimestamp: number = -1;
-
+const gameService: GameService = new GameService();
 const waitingList: WaitingListService = new WaitingListService();
 
 const INITIAL_ID: number = 1;
 let IDVAL: number = INITIAL_ID;
-
-const TWO_DEAD_PLAYERS: number = 0;
-const ONE_DEAD_PLAYER: number = 1;
-
-const deadPlayerChecker = setInterval(function () {
-    if ((game.isReady() === false) && (!game.isInProgress())) return;
-
-    let elapsedTimestamp: number;
-    let situation: number;
-    const currTimestamp: number = (new Date()).getTime();
-    if (game.getLastPlayTimestamp() < 0) {
-        elapsedTimestamp = currTimestamp - game.getStartTimestamp();
-        situation = TWO_DEAD_PLAYERS;
-
-        broadCast('test', {
-            message: 'TWO DEAD PLAYERS',
-            gameStart: game.getStartTimestamp(),
-            lastPlayTimestamp: game.getLastPlayTimestamp(),
-            elapsedTimestamp: elapsedTimestamp,
-        });
-    } else {
-        elapsedTimestamp = currTimestamp - game.getLastPlayTimestamp();
-        situation = ONE_DEAD_PLAYER;
-
-        broadCast('test', {
-            message: 'ONE DEAD PLAYERS',
-            gameStart: game.getStartTimestamp(),
-            lastPlayTimestamp: game.getLastPlayTimestamp(),
-            elapsedTimestamp: elapsedTimestamp,
-        });
-    }
-
-    if (elapsedTimestamp > 60000) {
-        console.log(game);
-        handleGameOverByDeadPlayer(situation);
-    }
-}, 90000);
-
 
 function createPlayerId() {
     return IDVAL++;
@@ -72,7 +33,7 @@ function createPlayerId() {
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, waitingList, game, IDVAL, broadCast);
+    new RegisterController().handle(req, res, waitingList, gameService, IDVAL, broadCast);
 });
 
 function createWaitingRoomUpdateJSON(waitingList: any) {
@@ -82,7 +43,7 @@ function createWaitingRoomUpdateJSON(waitingList: any) {
 }
 
 function createGameSetup() {
-    const setup: any = game.getGameSetup();
+    const setup: any = gameService.get().getGameSetup();
     return ({
         gridsize: setup.gridsize,
         player1Id: setup.player1Id,
@@ -103,18 +64,18 @@ routes.get('/gameinfo', (req, res) => {
 });
 
 routes.get('/waitingroom', (req, res) => {
-    console.log(game.players);
+    console.log(gameService.get().players);
     let player1name: string;
     let player2name: string;
-    if (game.isReady() || game.isInProgress()) {
-        player1name = game.players[0].name;
-        player2name = game.players[1].name;
+    if (gameService.get().isReady() || gameService.get().isInProgress()) {
+        player1name = gameService.get().players[0].name;
+        player2name = gameService.get().players[1].name;
     } else {
         player1name = '???';
         player2name = '???';
     }
     return res.status(201).json({
-        'gameStatus': game.getStatus(),
+        'gameStatus': gameService.get().getStatus(),
         'player1': player1name,
         'player2': player2name,
         'waitingList': waitingList.getAll()
@@ -124,17 +85,17 @@ routes.get('/waitingroom', (req, res) => {
 routes.post('/botPlay', (req, res) => {
     console.log('botPlay endpoint was called');
 
-    lastPlayTimestamp = (new Date()).getTime();
+    gameService.setPlayTime();
 
-    if (game.getTurn() != 0) {
+    if (gameService.get().getTurn() != 0) {
         return res.status(400).json({
             'message': 'Play rejected because it´s not your turn',
         });
     }
 
-    const botPlayer: BotPlayer = game.players[0] as BotPlayer;
-    let playResult = botPlayer.play(game);
-    if (game.isOver()) {
+    const botPlayer: BotPlayer = gameService.get().players[0] as BotPlayer;
+    let playResult = botPlayer.play(gameService.get());
+    if (gameService.get().isOver()) {
         handleGameOver(req, playResult);
     } else {
         broadCast('gameUpdate', playResult);
@@ -146,13 +107,13 @@ routes.post('/selection', (req, res) => {
     console.log('selection endpoint called');
 
     const playerId: number = req.body.player;
-    if (game.getTurn() != playerId) {
+    if (gameService.get().getTurn() != playerId) {
         return res.status(400).json({
             'message': 'Play rejected because it´s not your turn',
         });
     }
 
-    lastPlayTimestamp = (new Date()).getTime();
+    gameService.setPlayTime();
 
     const x1: number = req.body.x1;
     const y1: number = req.body.y1
@@ -163,10 +124,10 @@ routes.post('/selection', (req, res) => {
     const p2: Point = new Point(x2, y2);
     const edge: Edge = new Edge(p1, p2);
 
-    let playResult = game.play(playerId, edge);
+    let playResult = gameService.get().play(playerId, edge);
 
-    if (game.isOver()) {
-        if (game.isOverByDraw()) {
+    if (gameService.get().isOver()) {
+        if (gameService.get().isOverByDraw()) {
             console.log('Gameover by draw');
             handleGameOverByDraw(req, playResult);
         } else {
@@ -181,16 +142,16 @@ routes.post('/selection', (req, res) => {
 });
 
 function handleGameOverByDraw(req: any, playResult: any) {
-    const p1 = game.players[0];
-    const p2 = game.players[1];
-    game.newGame(p1, p2);
+    const p1 = gameService.get().players[0];
+    const p2 = gameService.get().players[1];
+    gameService.get().newGame(p1, p2);
     playResult.whatsNext = createPassport(p1, 'GameRoom', p2, 'GameRoom');
 }
 
 // TODO - REFACTOR FOR GOD SAKE!!!
 function handleGameOver(req: any, playResult: any) {
-    const winner = game.getWinner();
-    const looser = game.getLooser();
+    const winner = gameService.get().getWinner();
+    const looser = gameService.get().getLooser();
 
     if (waitingList.getLength() > 0) {
         // Add looser to waiting list
@@ -198,42 +159,18 @@ function handleGameOver(req: any, playResult: any) {
         // Prepare new game
         let playerInvited = waitingList.getFirst();
         if (winner != null) {
-            game.newGame(winner, playerInvited);
+            gameService.get().newGame(winner, playerInvited);
         }
         // Keep winner in game room and send looser to the waiting room
         playResult.whatsNext = createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
         broadcastNewGame(playerInvited, waitingList.getAll(), false);
     } else {
         // Start a new game with same players
-        game.newGame(winner!, looser);
+        gameService.get().newGame(winner!, looser);
         playResult.whatsNext = createPassport(winner!, 'GameRoom', looser, 'GameRoom');
     }
 }
 
-function handleGameOverByDeadPlayer(situation: number) {
-    console.log('DEAD PLAYER DETECTED!!!');
-    const p1: Player = game.players[0];
-    const p2: Player = game.players[1];
-
-    if (game.isBotGame()) {
-        if (waitingList.getLength() > 0) {
-            let firstInWaitingList = waitingList.getFirst();
-            game.newGame(p1, firstInWaitingList);
-            broadcastNewGame(firstInWaitingList, waitingList.getAll(), true);
-        } else {
-            waitingList.add(p1);
-            game.reset();
-            broadCast('emptyGameRoom', {});
-        }
-    } else {
-        //TODO Refactor solution to answer: Who did the last move?
-        if (waitingList.getLength() > 0) {
-            //TODO Start new game between the player who did the last move and first in the waitinglist
-        } else {
-            //TODO Start new game between bot and the player who did the last move
-        }
-    }
-}
 
 function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
     // Invite first in waiting room to game room
@@ -275,10 +212,10 @@ function broadCast(message: string, info: any) {
 }
 
 routes.get('/reset', (req, res) => {
-    console.log('routes: before reset' + game.players);
+    console.log('routes: before reset' + gameService.get().players);
     waitingList.reset();
-    game.reset();
-    console.log('routes: after reset' + game.players);
+    gameService.get().reset();
+    console.log('routes: after reset' + gameService.get().players);
     return res.status(201);
 });
 

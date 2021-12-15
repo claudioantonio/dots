@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import Game from "./logic/Game";
 import Player from "./logic/Player";
+import { GameService } from "./service/GameService";
 import { WaitingListService } from "./service/WaitingListService";
 
 class RegisterController {
 
     handle(
         request: Request, response: Response, waitingList: WaitingListService,
-        game: Game, IDVAL: number, broadCast: Function
+        gameService: GameService, IDVAL: number, broadCast: Function
     ) {
         try {
             const newPlayerName: string = request.body.user;
@@ -17,7 +18,7 @@ class RegisterController {
             let player2: Player | null = null;
             let roomPass: string = 'GameRoom';
 
-            if ((game.isReady()) || (game.isInProgress())) {
+            if ((gameService.get().isReady()) || (gameService.get().isInProgress())) {
                 waitingList.add(new Player(newPlayerId, newPlayerName));
                 broadCast(
                     'waitingRoomUpdate',
@@ -28,8 +29,8 @@ class RegisterController {
             } else { // Waiting for a player
                 player1 = waitingList.getFirst();
                 player2 = new Player(newPlayerId, newPlayerName);
-                game.addPlayer(player1);
-                game.addPlayer(player2);
+                gameService.get().addPlayer(player1);
+                gameService.get().addPlayer(player2);
             }
 
             return response.status(201).json({
