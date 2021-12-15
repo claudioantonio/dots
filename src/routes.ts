@@ -7,6 +7,7 @@ import Game from './logic/Game';
 import Point from './logic/Point';
 import BotPlayer from './logic/BotPlayer';
 import { WaitingListService } from './service/WaitingListService';
+import { RegisterController } from './RegisterController';
 
 let socketServer: any;
 
@@ -71,37 +72,7 @@ function createPlayerId() {
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    try {
-        const newPlayerName: string = req.body.user;
-        const newPlayerId: number = createPlayerId();
-
-        let player1: Player | null = null;
-        let player2: Player | null = null;
-        let roomPass: string = 'GameRoom';
-
-        if ((game.isReady()) || (game.isInProgress())) {
-            waitingList.add(new Player(newPlayerId, newPlayerName));
-            broadCast(
-                'waitingRoomUpdate',
-                createWaitingRoomUpdateJSON(waitingList.getAll())
-            );
-        } else { // Waiting for a player
-            player1 = waitingList.getFirst();
-            player2 = new Player(newPlayerId, newPlayerName);
-            game.addPlayer(player1);
-            game.addPlayer(player2);
-        }
-
-        return res.status(201).json({
-            'playerId': newPlayerId,
-            'roomPass': roomPass
-        });
-    } catch (e) {
-        console.log(e);
-        return res.status(400).json({
-            error: 'Routes: Unexpected error while registering new player'
-        });
-    }
+    new RegisterController().handle(req, res, waitingList, game, IDVAL, broadCast);
 });
 
 function createWaitingRoomUpdateJSON(waitingList: any) {
