@@ -1,5 +1,6 @@
 import { time } from "console";
 import Game from "../logic/Game";
+import Player from "../logic/Player";
 
 class GameService {
     game: Game;
@@ -17,6 +18,20 @@ class GameService {
     setPlayTime(): void {
         this.lastPlayTimestamp = (new Date()).getTime();
     }
+
+    createPassport(p1: Player, roomForP1: string, p2: Player, roomForP2: string) {
+        return {
+            winner: {
+                'playerId': p1.id,
+                'roomPass': roomForP1,
+            },
+            looser: {
+                'playerId': p2.id,
+                'roomPass': roomForP2,
+            }
+        }
+    }
+
 
     // TWO_DEAD_PLAYERS: number = 0;
     // ONE_DEAD_PLAYER: number = 1;

@@ -1,14 +1,11 @@
 import { Router } from 'express';
-import socketIo from 'socket.io';
 
 import Player from './logic/Player';
-import Edge from './logic/Edge';
-import Game from './logic/Game';
-import Point from './logic/Point';
 import BotPlayer from './logic/BotPlayer';
 import { WaitingListService } from './service/WaitingListService';
 import { RegisterController } from './RegisterController';
 import { GameService } from './service/GameService';
+import { TurnController } from './TurnController';
 
 let socketServer: any;
 
@@ -82,6 +79,30 @@ routes.get('/waitingroom', (req, res) => {
     });
 });
 
+// TODO - REFACTOR FOR GOD SAKE!!!
+function handleGameOver(req: any, playResult: any) {
+    const winner = gameService.get().getWinner();
+    const looser = gameService.get().getLooser();
+
+    if (waitingList.getLength() > 0) {
+        // Add looser to waiting list
+        waitingList.add(looser);
+        // Prepare new game
+        let playerInvited = waitingList.getFirst();
+        if (winner != null) {
+            gameService.get().newGame(winner, playerInvited);
+        }
+        // Keep winner in game room and send looser to the waiting room
+        playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
+        broadcastNewGame(playerInvited, waitingList.getAll(), false);
+    } else {
+        // Start a new game with same players
+        gameService.get().newGame(winner!, looser);
+        playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'GameRoom');
+    }
+    console.log('whats next?', playResult.whatsNext);
+}
+
 routes.post('/botPlay', (req, res) => {
     console.log('botPlay endpoint was called');
 
@@ -104,73 +125,8 @@ routes.post('/botPlay', (req, res) => {
 });
 
 routes.post('/selection', (req, res) => {
-    console.log('selection endpoint called');
-
-    const playerId: number = req.body.player;
-    if (gameService.get().getTurn() != playerId) {
-        return res.status(400).json({
-            'message': 'Play rejected because it´s not your turn',
-        });
-    }
-
-    gameService.setPlayTime();
-
-    const x1: number = req.body.x1;
-    const y1: number = req.body.y1
-    const x2: number = req.body.x2;
-    const y2: number = req.body.y2
-
-    const p1: Point = new Point(x1, y1);
-    const p2: Point = new Point(x2, y2);
-    const edge: Edge = new Edge(p1, p2);
-
-    let playResult = gameService.get().play(playerId, edge);
-
-    if (gameService.get().isOver()) {
-        if (gameService.get().isOverByDraw()) {
-            console.log('Gameover by draw');
-            handleGameOverByDraw(req, playResult);
-        } else {
-            console.log('Gameover with winner');
-            handleGameOver(req, playResult);
-        }
-    }
-
-    broadCast('gameUpdate', playResult);
-
-    return res.status(201).json(playResult);
+    new TurnController().handle(req, res, gameService, waitingList, broadCast, broadcastNewGame);
 });
-
-function handleGameOverByDraw(req: any, playResult: any) {
-    const p1 = gameService.get().players[0];
-    const p2 = gameService.get().players[1];
-    gameService.get().newGame(p1, p2);
-    playResult.whatsNext = createPassport(p1, 'GameRoom', p2, 'GameRoom');
-}
-
-// TODO - REFACTOR FOR GOD SAKE!!!
-function handleGameOver(req: any, playResult: any) {
-    const winner = gameService.get().getWinner();
-    const looser = gameService.get().getLooser();
-
-    if (waitingList.getLength() > 0) {
-        // Add looser to waiting list
-        waitingList.add(looser);
-        // Prepare new game
-        let playerInvited = waitingList.getFirst();
-        if (winner != null) {
-            gameService.get().newGame(winner, playerInvited);
-        }
-        // Keep winner in game room and send looser to the waiting room
-        playResult.whatsNext = createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-        broadcastNewGame(playerInvited, waitingList.getAll(), false);
-    } else {
-        // Start a new game with same players
-        gameService.get().newGame(winner!, looser);
-        playResult.whatsNext = createPassport(winner!, 'GameRoom', looser, 'GameRoom');
-    }
-}
-
 
 function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
     // Invite first in waiting room to game room
@@ -186,19 +142,6 @@ function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadCl
     // TODO Complete page reload is not SPA behavior....
     if (reloadClient) {
         broadCast('reloadGameRoom', {});
-    }
-}
-
-function createPassport(p1: Player, roomForP1: string, p2: Player, roomForP2: string) {
-    return {
-        winner: {
-            'playerId': p1.id,
-            'roomPass': roomForP1,
-        },
-        looser: {
-            'playerId': p2.id,
-            'roomPass': roomForP2,
-        }
     }
 }
 
