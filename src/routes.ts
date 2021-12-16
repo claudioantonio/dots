@@ -41,7 +41,6 @@ function createWaitingRoomUpdateJSON(waitingList: any) {
     };
 }
 
-
 routes.get('/gameinfo', (req, res) => {
     new GetGameInfoController().handle(req, res, gameService);
 });
