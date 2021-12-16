@@ -7,6 +7,7 @@ import { RegisterController } from './controller/RegisterController';
 import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
 import { GetGameInfoController } from './controller/GetGameInfoController';
+import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
 
 let socketServer: any;
 
@@ -46,22 +47,7 @@ routes.get('/gameinfo', (req, res) => {
 });
 
 routes.get('/waitingroom', (req, res) => {
-    console.log(gameService.get().players);
-    let player1name: string;
-    let player2name: string;
-    if (gameService.get().isReady() || gameService.get().isInProgress()) {
-        player1name = gameService.get().players[0].name;
-        player2name = gameService.get().players[1].name;
-    } else {
-        player1name = '???';
-        player2name = '???';
-    }
-    return res.status(201).json({
-        'gameStatus': gameService.get().getStatus(),
-        'player1': player1name,
-        'player2': player2name,
-        'waitingList': gameService.getWaitingList().getAll()
-    });
+    new GetWaitingRoomController().handle(req, res, gameService);
 });
 
 // TODO - REFACTOR FOR GOD SAKE!!!
