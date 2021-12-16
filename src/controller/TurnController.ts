@@ -6,7 +6,7 @@ import { WaitingListService } from "../service/WaitingListService";
 
 class TurnController {
 
-    handle(request: Request, response: Response, gameService: GameService, waitingList: WaitingListService, broadCast: Function, broadcastNewGame: Function) {
+    handle(request: Request, response: Response, gameService: GameService, broadCast: Function, broadcastNewGame: Function) {
         console.log('selection endpoint called');
 
         const playerId: number = request.body.player;
@@ -35,7 +35,7 @@ class TurnController {
                 this.handleGameOverByDraw(request, playResult, gameService);
             } else {
                 console.log('Gameover with winner');
-                this.handleGameOver(request, playResult, gameService, waitingList, broadCast, broadcastNewGame);
+                this.handleGameOver(request, playResult, gameService, broadcastNewGame);
             }
         }
 
@@ -52,21 +52,21 @@ class TurnController {
     }
 
     // TODO - REFACTOR FOR GOD SAKE!!!
-    private handleGameOver(req: any, playResult: any, gameService: GameService, waitingList: WaitingListService, broadcastNewGame: Function) {
+    private handleGameOver(req: any, playResult: any, gameService: GameService, broadcastNewGame: Function) {
         const winner = gameService.get().getWinner();
         const looser = gameService.get().getLooser();
 
-        if (waitingList.getLength() > 0) {
+        if (gameService.getWaitingList().getLength() > 0) {
             // Add looser to waiting list
-            waitingList.add(looser);
+            gameService.getWaitingList().add(looser);
             // Prepare new game
-            let playerInvited = waitingList.getFirst();
+            let playerInvited = gameService.getWaitingList().getFirst();
             if (winner != null) {
                 gameService.get().newGame(winner, playerInvited);
             }
             // Keep winner in game room and send looser to the waiting room
             playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            broadcastNewGame(playerInvited, waitingList.getAll(), false);
+            broadcastNewGame(playerInvited, gameService.getWaitingList().getAll(), false);
         } else {
             // Start a new game with same players
             gameService.get().newGame(winner!, looser);

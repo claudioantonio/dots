@@ -12,7 +12,7 @@ let socketServer: any;
 const routes = Router();
 
 const gameService: GameService = new GameService();
-const waitingList: WaitingListService = new WaitingListService();
+
 
 const INITIAL_ID: number = 1;
 let IDVAL: number = INITIAL_ID;
@@ -30,7 +30,7 @@ function createPlayerId() {
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, waitingList, gameService, IDVAL, broadCast);
+    new RegisterController().handle(req, res, gameService, IDVAL, broadCast);
 });
 
 function createWaitingRoomUpdateJSON(waitingList: any) {
@@ -39,24 +39,11 @@ function createWaitingRoomUpdateJSON(waitingList: any) {
     };
 }
 
-function createGameSetup() {
-    const setup: any = gameService.get().getGameSetup();
-    return ({
-        gridsize: setup.gridsize,
-        player1Id: setup.player1Id,
-        player1: setup.player1,
-        player2: setup.player2,
-        score_player1: setup.score_player1,
-        score_player2: setup.score_player2,
-        turn: setup.turn,
-        gameOver: setup.gameOver,
-        waitinglist: waitingList.getAll()
-    });
-}
+
 
 routes.get('/gameinfo', (req, res) => {
     return res.status(201).json(
-        createGameSetup()
+        gameService.createGameSetup()
     );
 });
 
@@ -75,7 +62,7 @@ routes.get('/waitingroom', (req, res) => {
         'gameStatus': gameService.get().getStatus(),
         'player1': player1name,
         'player2': player2name,
-        'waitingList': waitingList.getAll()
+        'waitingList': gameService.getWaitingList().getAll()
     });
 });
 
@@ -84,17 +71,17 @@ function handleGameOver(req: any, playResult: any) {
     const winner = gameService.get().getWinner();
     const looser = gameService.get().getLooser();
 
-    if (waitingList.getLength() > 0) {
+    if (gameService.getWaitingList().getLength() > 0) {
         // Add looser to waiting list
-        waitingList.add(looser);
+        gameService.getWaitingList().add(looser);
         // Prepare new game
-        let playerInvited = waitingList.getFirst();
+        let playerInvited = gameService.getWaitingList().getFirst();
         if (winner != null) {
             gameService.get().newGame(winner, playerInvited);
         }
         // Keep winner in game room and send looser to the waiting room
         playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-        broadcastNewGame(playerInvited, waitingList.getAll(), false);
+        broadcastNewGame(playerInvited, gameService.getWaitingList().getAll(), false);
     } else {
         // Start a new game with same players
         gameService.get().newGame(winner!, looser);
@@ -125,7 +112,7 @@ routes.post('/botPlay', (req, res) => {
 });
 
 routes.post('/selection', (req, res) => {
-    new TurnController().handle(req, res, gameService, waitingList, broadCast, broadcastNewGame);
+    new TurnController().handle(req, res, gameService, broadCast, broadcastNewGame);
 });
 
 function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
@@ -156,7 +143,7 @@ function broadCast(message: string, info: any) {
 
 routes.get('/reset', (req, res) => {
     console.log('routes: before reset' + gameService.get().players);
-    waitingList.reset();
+    gameService.getWaitingList().reset();
     gameService.get().reset();
     console.log('routes: after reset' + gameService.get().players);
     return res.status(201);

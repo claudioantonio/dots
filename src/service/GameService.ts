@@ -1,14 +1,21 @@
 import { time } from "console";
 import Game from "../logic/Game";
 import Player from "../logic/Player";
+import { WaitingListService } from "./WaitingListService";
 
 class GameService {
     game: Game;
+    waitingList: WaitingListService;
     lastPlayTimestamp: number;
 
     constructor() {
         this.game = new Game();
         this.lastPlayTimestamp = -1;
+        this.waitingList = new WaitingListService();
+    }
+
+    getWaitingList() {
+        return this.waitingList;
     }
 
     get(): Game {
@@ -32,6 +39,20 @@ class GameService {
         }
     }
 
+    createGameSetup() {
+        const setup: any = this.get().getGameSetup();
+        return ({
+            gridsize: setup.gridsize,
+            player1Id: setup.player1Id,
+            player1: setup.player1,
+            player2: setup.player2,
+            score_player1: setup.score_player1,
+            score_player2: setup.score_player2,
+            turn: setup.turn,
+            gameOver: setup.gameOver,
+            waitinglist: this.getWaitingList().getAll()
+        });
+    }
 
     // TWO_DEAD_PLAYERS: number = 0;
     // ONE_DEAD_PLAYER: number = 1;

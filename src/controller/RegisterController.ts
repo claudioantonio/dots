@@ -7,7 +7,7 @@ import { WaitingListService } from "../service/WaitingListService";
 class RegisterController {
 
     handle(
-        request: Request, response: Response, waitingList: WaitingListService,
+        request: Request, response: Response,
         gameService: GameService, IDVAL: number, broadCast: Function
     ) {
         try {
@@ -19,15 +19,15 @@ class RegisterController {
             let roomPass: string = 'GameRoom';
 
             if ((gameService.get().isReady()) || (gameService.get().isInProgress())) {
-                waitingList.add(new Player(newPlayerId, newPlayerName));
+                gameService.getWaitingList().add(new Player(newPlayerId, newPlayerName));
                 broadCast(
                     'waitingRoomUpdate',
                     {
-                        'waitingList': waitingList.getAll()
+                        'waitingList': gameService.getWaitingList().getAll()
                     }
                 );
             } else { // Waiting for a player
-                player1 = waitingList.getFirst();
+                player1 = gameService.getWaitingList().getFirst();
                 player2 = new Player(newPlayerId, newPlayerName);
                 gameService.get().addPlayer(player1);
                 gameService.get().addPlayer(player2);
