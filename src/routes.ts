@@ -6,6 +6,7 @@ import { WaitingListService } from './service/WaitingListService';
 import { RegisterController } from './controller/RegisterController';
 import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
+import { GetGameInfoController } from './controller/GetGameInfoController';
 
 let socketServer: any;
 
@@ -40,11 +41,8 @@ function createWaitingRoomUpdateJSON(waitingList: any) {
 }
 
 
-
 routes.get('/gameinfo', (req, res) => {
-    return res.status(201).json(
-        gameService.createGameSetup()
-    );
+    new GetGameInfoController().handle(req, res, gameService);
 });
 
 routes.get('/waitingroom', (req, res) => {
