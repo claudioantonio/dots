@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import Game from "./logic/Game";
-import Player from "./logic/Player";
-import { GameService } from "./service/GameService";
-import { WaitingListService } from "./service/WaitingListService";
+import Game from "../logic/Game";
+import Player from "../logic/Player";
+import { GameService } from "../service/GameService";
+import { WaitingListService } from "../service/WaitingListService";
 
 class RegisterController {
 

@@ -3,9 +3,9 @@ import { Router } from 'express';
 import Player from './logic/Player';
 import BotPlayer from './logic/BotPlayer';
 import { WaitingListService } from './service/WaitingListService';
-import { RegisterController } from './RegisterController';
+import { RegisterController } from './controller/RegisterController';
 import { GameService } from './service/GameService';
-import { TurnController } from './TurnController';
+import { TurnController } from './controller/TurnController';
 
 let socketServer: any;
 

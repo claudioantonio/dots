@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import Edge from "./logic/Edge";
-import Point from "./logic/Point";
-import { GameService } from "./service/GameService";
-import { WaitingListService } from "./service/WaitingListService";
+import Edge from "../logic/Edge";
+import Point from "../logic/Point";
+import { GameService } from "../service/GameService";
+import { WaitingListService } from "../service/WaitingListService";
 
 class TurnController {
 
