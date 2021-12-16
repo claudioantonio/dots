@@ -1,14 +1,13 @@
 import { Router } from 'express';
 
 import Player from './logic/Player';
-import BotPlayer from './logic/BotPlayer';
-import { WaitingListService } from './service/WaitingListService';
 import { RegisterController } from './controller/RegisterController';
 import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
 import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
 import { BotTurnController } from './controller/BotTurnContoller';
+import { ResetGameController } from './controller/ResetGameController';
 
 let socketServer: any;
 
@@ -36,7 +35,6 @@ routes.post('/register', (req, res) => {
     new RegisterController().handle(req, res, gameService, IDVAL, broadCast);
 });
 
-
 routes.get('/gameinfo', (req, res) => {
     new GetGameInfoController().handle(req, res, gameService);
 });
@@ -55,11 +53,7 @@ routes.post('/selection', (req, res) => {
 });
 
 routes.get('/reset', (req, res) => {
-    console.log('routes: before reset' + gameService.get().players);
-    gameService.getWaitingList().reset();
-    gameService.get().reset();
-    console.log('routes: after reset' + gameService.get().players);
-    return res.status(201);
+    new ResetGameController().handle(req, res, gameService);
 });
 
 
