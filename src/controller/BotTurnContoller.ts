@@ -3,7 +3,7 @@ import BotPlayer from "../logic/BotPlayer";
 import { GameService } from "../service/GameService";
 
 class BotTurnController {
-    handle(response: Response, request: Request, gameService: GameService, broadCast: Function, broadcastNewGame: Function) {
+    handle(request: Request, response: Response, gameService: GameService, broadCast: Function, broadcastNewGame: Function) {
         console.log('botPlay endpoint was called');
 
         gameService.setPlayTime();

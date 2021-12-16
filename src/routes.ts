@@ -8,6 +8,7 @@ import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
 import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
+import { BotTurnController } from './controller/BotTurnContoller';
 
 let socketServer: any;
 
@@ -35,11 +36,6 @@ routes.post('/register', (req, res) => {
     new RegisterController().handle(req, res, gameService, IDVAL, broadCast);
 });
 
-function createWaitingRoomUpdateJSON(waitingList: any) {
-    return {
-        'waitingList': waitingList
-    };
-}
 
 routes.get('/gameinfo', (req, res) => {
     new GetGameInfoController().handle(req, res, gameService);
@@ -49,54 +45,29 @@ routes.get('/waitingroom', (req, res) => {
     new GetWaitingRoomController().handle(req, res, gameService);
 });
 
-// TODO - REFACTOR FOR GOD SAKE!!!
-function handleGameOver(req: any, playResult: any) {
-    const winner = gameService.get().getWinner();
-    const looser = gameService.get().getLooser();
-
-    if (gameService.getWaitingList().getLength() > 0) {
-        // Add looser to waiting list
-        gameService.getWaitingList().add(looser);
-        // Prepare new game
-        let playerInvited = gameService.getWaitingList().getFirst();
-        if (winner != null) {
-            gameService.get().newGame(winner, playerInvited);
-        }
-        // Keep winner in game room and send looser to the waiting room
-        playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-        broadcastNewGame(playerInvited, gameService.getWaitingList().getAll(), false);
-    } else {
-        // Start a new game with same players
-        gameService.get().newGame(winner!, looser);
-        playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'GameRoom');
-    }
-    console.log('whats next?', playResult.whatsNext);
-}
 
 routes.post('/botPlay', (req, res) => {
-    console.log('botPlay endpoint was called');
-
-    gameService.setPlayTime();
-
-    if (gameService.get().getTurn() != 0) {
-        return res.status(400).json({
-            'message': 'Play rejected because it´s not your turn',
-        });
-    }
-
-    const botPlayer: BotPlayer = gameService.get().players[0] as BotPlayer;
-    let playResult = botPlayer.play(gameService.get());
-    if (gameService.get().isOver()) {
-        handleGameOver(req, playResult);
-    } else {
-        broadCast('gameUpdate', playResult);
-    }
-    return res.status(201).json(playResult);
+    new BotTurnController().handle(req, res, gameService, broadCast, broadcastNewGame);
 });
 
 routes.post('/selection', (req, res) => {
     new TurnController().handle(req, res, gameService, broadCast, broadcastNewGame);
 });
+
+routes.get('/reset', (req, res) => {
+    console.log('routes: before reset' + gameService.get().players);
+    gameService.getWaitingList().reset();
+    gameService.get().reset();
+    console.log('routes: after reset' + gameService.get().players);
+    return res.status(201);
+});
+
+
+function createWaitingRoomUpdateJSON(waitingList: any) {
+    return {
+        'waitingList': waitingList
+    };
+}
 
 function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
     // Invite first in waiting room to game room
@@ -124,13 +95,6 @@ function broadCast(message: string, info: any) {
     io.emit(message, info);
 }
 
-routes.get('/reset', (req, res) => {
-    console.log('routes: before reset' + gameService.get().players);
-    gameService.getWaitingList().reset();
-    gameService.get().reset();
-    console.log('routes: after reset' + gameService.get().players);
-    return res.status(201);
-});
 
 function disconnectHandler() {
     console.log('Routes - A client disconnected');
