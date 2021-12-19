@@ -14,6 +14,7 @@ class GameService {
         this.waitingList = new WaitingListService();
     }
 
+    // TODO: Access broadcast from a service
     enterGame(newPlayer: Player, broadCast: Function) {
         if ((this.get().isReady()) || (this.get().isInProgress())) {
             this.getWaitingList().add(newPlayer);
