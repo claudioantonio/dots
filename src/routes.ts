@@ -8,20 +8,14 @@ import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
 import { BotTurnController } from './controller/BotTurnContoller';
 import { ResetGameController } from './controller/ResetGameController';
+import { UserService } from './service/UserService';
 
 let socketServer: any;
 
 const routes = Router();
 
 const gameService: GameService = new GameService();
-
-
-const INITIAL_ID: number = 1;
-let IDVAL: number = INITIAL_ID;
-
-function createPlayerId() {
-    return IDVAL++;
-}
+const userService: UserService = UserService.getInstance();
 
 /**
  * Endpoint to register players
@@ -32,7 +26,7 @@ function createPlayerId() {
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, gameService, IDVAL, broadCast);
+    new RegisterController().handle(req, res, gameService, userService, broadCast);
 });
 
 routes.get('/gameinfo', (req, res) => {
@@ -42,7 +36,6 @@ routes.get('/gameinfo', (req, res) => {
 routes.get('/waitingroom', (req, res) => {
     new GetWaitingRoomController().handle(req, res, gameService);
 });
-
 
 routes.post('/botPlay', (req, res) => {
     new BotTurnController().handle(req, res, gameService, broadCast, broadcastNewGame);

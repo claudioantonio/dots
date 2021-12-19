@@ -2,17 +2,18 @@ import { Request, Response } from "express";
 import Game from "../logic/Game";
 import Player from "../logic/Player";
 import { GameService } from "../service/GameService";
+import { UserService } from "../service/UserService";
 import { WaitingListService } from "../service/WaitingListService";
 
 class RegisterController {
 
     handle(
         request: Request, response: Response,
-        gameService: GameService, IDVAL: number, broadCast: Function
+        gameService: GameService, userService: UserService, broadCast: Function
     ) {
         try {
             const newPlayerName: string = request.body.user;
-            const newPlayerId: number = IDVAL++;
+            const newPlayerId: number = userService.createPlayerId();
 
             let player1: Player | null = null;
             let player2: Player | null = null;
