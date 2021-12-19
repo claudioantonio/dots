@@ -14,6 +14,22 @@ class GameService {
         this.waitingList = new WaitingListService();
     }
 
+    enterGame(newPlayer: Player, broadCast: Function) {
+        if ((this.get().isReady()) || (this.get().isInProgress())) {
+            this.getWaitingList().add(newPlayer);
+            broadCast(
+                'waitingRoomUpdate',
+                {
+                    'waitingList': this.getWaitingList().getAll()
+                }
+            );
+        } else { // Waiting for a player
+            let player1: Player = this.getWaitingList().getFirst();
+            this.get().addPlayer(player1);
+            this.get().addPlayer(newPlayer);
+        }
+    }
+
     getWaitingList() {
         return this.waitingList;
     }

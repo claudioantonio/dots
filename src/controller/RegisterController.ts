@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import Game from "../logic/Game";
 import Player from "../logic/Player";
 import { GameService } from "../service/GameService";
 import { UserService } from "../service/UserService";
-import { WaitingListService } from "../service/WaitingListService";
 
 class RegisterController {
 
@@ -13,29 +11,14 @@ class RegisterController {
     ) {
         try {
             const newPlayerName: string = request.body.user;
-            const newPlayerId: number = userService.createPlayerId();
 
-            let player1: Player | null = null;
-            let player2: Player | null = null;
+            let newPlayer: Player = userService.createPlayer(newPlayerName);;
             let roomPass: string = 'GameRoom';
 
-            if ((gameService.get().isReady()) || (gameService.get().isInProgress())) {
-                gameService.getWaitingList().add(new Player(newPlayerId, newPlayerName));
-                broadCast(
-                    'waitingRoomUpdate',
-                    {
-                        'waitingList': gameService.getWaitingList().getAll()
-                    }
-                );
-            } else { // Waiting for a player
-                player1 = gameService.getWaitingList().getFirst();
-                player2 = new Player(newPlayerId, newPlayerName);
-                gameService.get().addPlayer(player1);
-                gameService.get().addPlayer(player2);
-            }
+            gameService.enterGame(newPlayer, broadCast);
 
             return response.status(201).json({
-                'playerId': newPlayerId,
+                'playerId': newPlayer.id,
                 'roomPass': roomPass
             });
         } catch (e) {

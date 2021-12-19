@@ -1,3 +1,5 @@
+import Player from "../logic/Player";
+
 class UserService {
     private static INSTANCE: UserService;
     currentID: number;
@@ -13,7 +15,12 @@ class UserService {
         return UserService.INSTANCE;
     }
 
-    createPlayerId(): number {
+    createPlayer(name: string): Player {
+        let id = this.createPlayerId();
+        return new Player(id, name);
+    }
+
+    private createPlayerId(): number {
         return this.currentID++;
     }
 }
