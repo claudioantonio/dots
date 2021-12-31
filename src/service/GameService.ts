@@ -1,6 +1,6 @@
-import { time } from "console";
 import Game from "../logic/Game";
 import Player from "../logic/Player";
+import { SocketService } from "./SocketService";
 import { WaitingListService } from "./WaitingListService";
 
 class GameService {
@@ -14,20 +14,38 @@ class GameService {
         this.waitingList = new WaitingListService();
     }
 
-    // TODO: Access broadcast from a service
-    enterGame(newPlayer: Player, broadCast: Function) {
+    enterGame(newPlayer: Player) {
         if ((this.get().isReady()) || (this.get().isInProgress())) {
             this.getWaitingList().add(newPlayer);
-            broadCast(
+            SocketService.getInstance().broadcastMessage(
                 'waitingRoomUpdate',
-                {
-                    'waitingList': this.getWaitingList().getAll()
-                }
+                { 'waitingList': this.getWaitingList().getAll() }
             );
         } else { // Waiting for a player
             let player1: Player = this.getWaitingList().getFirst();
             this.get().addPlayer(player1);
             this.get().addPlayer(newPlayer);
+        }
+    }
+
+    noticeNewGame(invitedPlayerId: number, reloadClient: boolean) {
+        // Invite first in waiting room to game room
+        SocketService.getInstance().broadcastMessage(
+            'enterGameRoom',
+            { 'invitationForPlayer': invitedPlayerId }
+        );
+        // Send info to update waiting room
+        SocketService.getInstance().broadcastMessage(
+            'waitingRoomUpdate',
+            { 'waitingList': this.getWaitingList().getAll() }
+        );
+        // Send event to reload clients page :-\
+        // TODO Complete page reload is not SPA behavior....
+        if (reloadClient) {
+            SocketService.getInstance().broadcastMessage(
+                'reloadGameRoom',
+                {}
+            );
         }
     }
 

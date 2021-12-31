@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import Edge from "../logic/Edge";
 import Point from "../logic/Point";
 import { GameService } from "../service/GameService";
-import { WaitingListService } from "../service/WaitingListService";
+import { SocketService } from "../service/SocketService";
 
 class TurnController {
 
-    handle(request: Request, response: Response, gameService: GameService, broadCast: Function, broadcastNewGame: Function) {
+    handle(request: Request, response: Response, gameService: GameService) {
         console.log('selection endpoint called');
 
         const playerId: number = request.body.player;
@@ -35,11 +35,11 @@ class TurnController {
                 this.handleGameOverByDraw(request, playResult, gameService);
             } else {
                 console.log('Gameover with winner');
-                this.handleGameOver(request, playResult, gameService, broadcastNewGame);
+                this.handleGameOver(request, playResult, gameService);
             }
         }
 
-        broadCast('gameUpdate', playResult);
+        SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
 
         return response.status(201).json(playResult);
     }
@@ -52,7 +52,7 @@ class TurnController {
     }
 
     // TODO - REFACTOR FOR GOD SAKE!!!
-    private handleGameOver(req: any, playResult: any, gameService: GameService, broadcastNewGame: Function) {
+    private handleGameOver(req: any, playResult: any, gameService: GameService) {
         const winner = gameService.get().getWinner();
         const looser = gameService.get().getLooser();
 
@@ -66,7 +66,7 @@ class TurnController {
             }
             // Keep winner in game room and send looser to the waiting room
             playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            broadcastNewGame(playerInvited, gameService.getWaitingList().getAll(), false);
+            gameService.noticeNewGame(playerInvited.id, false);
         } else {
             // Start a new game with same players
             gameService.get().newGame(winner!, looser);

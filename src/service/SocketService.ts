@@ -1,27 +1,58 @@
-const io = require( "socket.io" )();
+import { Server, Socket } from "socket.io";
 
-let disconnectListener:Function;
+class SocketService {
+    private static INSTANCE: SocketService;
 
-io.on("connection", (socket:SocketIO.Socket) => {
-    console.log("New Socket.io client connected");
+    io: any;
+    disconnectListener: Function;
 
-    socket.on("disconnect", () => {
-      disconnectListener();
-    });
-});
+    constructor(httpServer: any, disconnectListener: Function, clientSocketHost: string) {
+        this.io = new Server();
+        this.disconnectListener = disconnectListener;
 
-function broadcastMessage(name:string,messageObj:any) {
-    io.emit(name, messageObj);
+        this.setupCORS(httpServer, clientSocketHost);
+        this.setupConnectionActions();
+
+        SocketService.INSTANCE = this;
+    }
+
+    /**
+     * Attach HTTP Server to SocketIO Server and configure CORS
+     * 
+     * @param httpServer 
+     * @param clientSocketHost 
+     */
+    private setupCORS(httpServer: any, clientSocketHost: string): void {
+        this.io.attach(httpServer, {
+            cors: {
+                origin: clientSocketHost,
+                methods: ["GET", "POST"],
+                allowedHeaders: ["my-custom-header"],
+                credentials: true
+            }
+        });
+    }
+
+    private setupConnectionActions() {
+        this.io.on("connection", (socket: SocketIO.Socket) => {
+            console.log("New Socket.io client connected");
+
+            socket.on("disconnect", () => {
+                this.disconnectListener();
+            });
+        });
+    }
+
+    static getInstance(): SocketService {
+        if (!SocketService.INSTANCE) {
+            throw new Error("SocketService was not initialized!");
+        }
+        return SocketService.INSTANCE;
+    }
+
+    public broadcastMessage(name: string, messageObj: any) {
+        this.io.emit(name, messageObj);
+    }
 }
 
-const disconnectListenerSetter:Function = (listener: Function) => {
-    disconnectListener = listener;
-}
-
-const socketapi = {
-    io: io,
-    broadcastMessage: broadcastMessage,
-    setDisconnectListener: disconnectListenerSetter
-};
-
-export default socketapi;
+export { SocketService };

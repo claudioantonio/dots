@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import BotPlayer from "../logic/BotPlayer";
 import { GameService } from "../service/GameService";
+import { SocketService } from "../service/SocketService";
 
 class BotTurnController {
-    handle(request: Request, response: Response, gameService: GameService, broadCast: Function, broadcastNewGame: Function) {
+    handle(request: Request, response: Response, gameService: GameService) {
         console.log('botPlay endpoint was called');
 
         gameService.setPlayTime();
@@ -17,15 +18,15 @@ class BotTurnController {
         const botPlayer: BotPlayer = gameService.get().players[0] as BotPlayer;
         let playResult = botPlayer.play(gameService.get());
         if (gameService.get().isOver()) {
-            this.handleGameOver(request, playResult, gameService, broadcastNewGame);
+            this.handleGameOver(request, playResult, gameService);
         } else {
-            broadCast('gameUpdate', playResult);
+            SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
         }
         return response.status(201).json(playResult);
     }
 
     // TODO - Duplicated in TurnController
-    private handleGameOver(req: any, playResult: any, gameService: GameService, broadcastNewGame: Function) {
+    private handleGameOver(req: any, playResult: any, gameService: GameService) {
         const winner = gameService.get().getWinner();
         const looser = gameService.get().getLooser();
 
@@ -39,7 +40,7 @@ class BotTurnController {
             }
             // Keep winner in game room and send looser to the waiting room
             playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            broadcastNewGame(playerInvited, gameService.getWaitingList().getAll(), false);
+            gameService.noticeNewGame(playerInvited.id, false);
         } else {
             // Start a new game with same players
             gameService.get().newGame(winner!, looser);

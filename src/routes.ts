@@ -1,6 +1,5 @@
 import { Router } from 'express';
 
-import Player from './logic/Player';
 import { RegisterController } from './controller/RegisterController';
 import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
@@ -9,8 +8,6 @@ import { GetWaitingRoomController } from './controller/GetWaitingRoomController'
 import { BotTurnController } from './controller/BotTurnContoller';
 import { ResetGameController } from './controller/ResetGameController';
 import { UserService } from './service/UserService';
-
-let socketServer: any;
 
 const routes = Router();
 
@@ -26,7 +23,7 @@ const userService: UserService = UserService.getInstance();
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, gameService, userService, broadCast);
+    new RegisterController().handle(req, res, gameService, userService);
 });
 
 routes.get('/gameinfo', (req, res) => {
@@ -38,57 +35,15 @@ routes.get('/waitingroom', (req, res) => {
 });
 
 routes.post('/botPlay', (req, res) => {
-    new BotTurnController().handle(req, res, gameService, broadCast, broadcastNewGame);
+    new BotTurnController().handle(req, res, gameService);
 });
 
 routes.post('/selection', (req, res) => {
-    new TurnController().handle(req, res, gameService, broadCast, broadcastNewGame);
+    new TurnController().handle(req, res, gameService);
 });
 
 routes.get('/reset', (req, res) => {
     new ResetGameController().handle(req, res, gameService);
 });
 
-
-function createWaitingRoomUpdateJSON(waitingList: any) {
-    return {
-        'waitingList': waitingList
-    };
-}
-
-function broadcastNewGame(playerInvited: Player, waitingList: Player[], reloadClient: boolean) {
-    // Invite first in waiting room to game room
-    broadCast('enterGameRoom', {
-        'invitationForPlayer': playerInvited.id,
-    });
-    // Send info to update waiting room
-    broadCast(
-        'waitingRoomUpdate',
-        createWaitingRoomUpdateJSON(waitingList)
-    );
-    // Send event to reload clients page :-\
-    // TODO Complete page reload is not SPA behavior....
-    if (reloadClient) {
-        broadCast('reloadGameRoom', {});
-    }
-}
-
-function getSocket() {
-    return socketServer;
-}
-
-function broadCast(message: string, info: any) {
-    const io = getSocket();
-    io.emit(message, info);
-}
-
-
-function disconnectHandler() {
-    console.log('Routes - A client disconnected');
-}
-
-export default function (SocketIO: any) {
-    socketServer = SocketIO.io;
-    SocketIO.setDisconnectListener(disconnectHandler);
-    return routes;
-}
+export default routes;
