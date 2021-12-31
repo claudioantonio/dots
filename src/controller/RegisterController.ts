@@ -6,13 +6,12 @@ import { UserService } from "../service/UserService";
 class RegisterController {
 
     handle(
-        request: Request, response: Response,
-        userService: UserService
+        request: Request, response: Response
     ) {
         try {
             const newPlayerName: string = request.body.user;
 
-            let newPlayer: Player = userService.createPlayer(newPlayerName);;
+            let newPlayer: Player = UserService.getInstance().createPlayer(newPlayerName);;
             let roomPass: string = 'GameRoom';
 
             GameService.getInstance().enterGame(newPlayer);

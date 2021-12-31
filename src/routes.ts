@@ -1,17 +1,13 @@
 import { Router } from 'express';
 
 import { RegisterController } from './controller/RegisterController';
-import { GameService } from './service/GameService';
 import { TurnController } from './controller/TurnController';
 import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
 import { BotTurnController } from './controller/BotTurnContoller';
 import { ResetGameController } from './controller/ResetGameController';
-import { UserService } from './service/UserService';
 
 const routes = Router();
-
-const userService: UserService = UserService.getInstance();
 
 /**
  * Endpoint to register players
@@ -22,7 +18,7 @@ const userService: UserService = UserService.getInstance();
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, userService);
+    new RegisterController().handle(req, res);
 });
 
 routes.get('/gameinfo', (req, res) => {
