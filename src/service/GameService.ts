@@ -1,6 +1,7 @@
 import Game from "../logic/Game";
 import Player from "../logic/Player";
 import { SocketService } from "./SocketService";
+import { UserService } from "./UserService";
 import { WaitingListService } from "./WaitingListService";
 
 class GameService {
@@ -24,18 +25,24 @@ class GameService {
         return GameService.INSTANCE;
     }
 
-    enterGame(newPlayer: Player) {
+    enterGame(newPlayerName: string): number {
+        let newPlayer: Player = UserService.getInstance().createPlayer(newPlayerName);
+
         if ((this.get().isReady()) || (this.get().isInProgress())) {
+            // Must wait until the current game finishes
             this.getWaitingList().add(newPlayer);
             SocketService.getInstance().broadcastMessage(
                 'waitingRoomUpdate',
                 { 'waitingList': this.getWaitingList().getAll() }
             );
-        } else { // Waiting for a player
+        } else {
+            // Start playing immediately
             let player1: Player = this.getWaitingList().getFirst();
             this.get().addPlayer(player1);
             this.get().addPlayer(newPlayer);
         }
+
+        return newPlayer.id;
     }
 
     noticeNewGame(invitedPlayerId: number, reloadClient: boolean) {

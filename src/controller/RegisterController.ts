@@ -1,29 +1,21 @@
 import { Request, Response } from "express";
-import Player from "../logic/Player";
 import { GameService } from "../service/GameService";
-import { UserService } from "../service/UserService";
 
 class RegisterController {
 
-    handle(
-        request: Request, response: Response
-    ) {
+    handle(request: Request, response: Response) {
         try {
             const newPlayerName: string = request.body.user;
-
-            let newPlayer: Player = UserService.getInstance().createPlayer(newPlayerName);;
-            let roomPass: string = 'GameRoom';
-
-            GameService.getInstance().enterGame(newPlayer);
+            const newPlayerId = GameService.getInstance().enterGame(newPlayerName);
 
             return response.status(201).json({
-                'playerId': newPlayer.id,
-                'roomPass': roomPass
+                'playerId': newPlayerId,
+                'roomPass': 'GameRoom'
             });
         } catch (e) {
             console.log(e);
             return response.status(400).json({
-                error: 'Routes: Unexpected error while registering new player'
+                error: 'RegisterController: Unexpected error while registering new player'
             });
         }
     }
