@@ -4,21 +4,21 @@ import { GameService } from "../service/GameService";
 import { SocketService } from "../service/SocketService";
 
 class BotTurnController {
-    handle(request: Request, response: Response, gameService: GameService) {
+    handle(request: Request, response: Response) {
         console.log('botPlay endpoint was called');
 
-        gameService.setPlayTime();
+        GameService.getInstance().setPlayTime();
 
-        if (gameService.get().getTurn() != 0) {
+        if (GameService.getInstance().get().getTurn() != 0) {
             return response.status(400).json({
                 'message': 'Play rejected because it´s not your turn',
             });
         }
 
-        const botPlayer: BotPlayer = gameService.get().players[0] as BotPlayer;
-        let playResult = botPlayer.play(gameService.get());
-        if (gameService.get().isOver()) {
-            this.handleGameOver(request, playResult, gameService);
+        const botPlayer: BotPlayer = GameService.getInstance().get().players[0] as BotPlayer;
+        let playResult = botPlayer.play(GameService.getInstance().get());
+        if (GameService.getInstance().get().isOver()) {
+            this.handleGameOver(request, playResult, GameService.getInstance());
         } else {
             SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
         }
@@ -26,29 +26,28 @@ class BotTurnController {
     }
 
     // TODO - Duplicated in TurnController
-    private handleGameOver(req: any, playResult: any, gameService: GameService) {
-        const winner = gameService.get().getWinner();
-        const looser = gameService.get().getLooser();
+    private handleGameOver(req: any, playResult: any) {
+        const winner = GameService.getInstance().get().getWinner();
+        const looser = GameService.getInstance().get().getLooser();
 
-        if (gameService.getWaitingList().getLength() > 0) {
+        if (GameService.getInstance().getWaitingList().getLength() > 0) {
             // Add looser to waiting list
-            gameService.getWaitingList().add(looser);
+            GameService.getInstance().getWaitingList().add(looser);
             // Prepare new game
-            let playerInvited = gameService.getWaitingList().getFirst();
+            let playerInvited = GameService.getInstance().getWaitingList().getFirst();
             if (winner != null) {
-                gameService.get().newGame(winner, playerInvited);
+                GameService.getInstance().get().newGame(winner, playerInvited);
             }
             // Keep winner in game room and send looser to the waiting room
-            playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            gameService.noticeNewGame(playerInvited.id, false);
+            playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
+            GameService.getInstance().noticeNewGame(playerInvited.id, false);
         } else {
             // Start a new game with same players
-            gameService.get().newGame(winner!, looser);
-            playResult.whatsNext = gameService.createPassport(winner!, 'GameRoom', looser, 'GameRoom');
+            GameService.getInstance().get().newGame(winner!, looser);
+            playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'GameRoom');
         }
         console.log('whats next?', playResult.whatsNext);
     }
-
 }
 
 export { BotTurnController };

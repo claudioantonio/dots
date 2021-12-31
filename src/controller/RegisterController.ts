@@ -7,7 +7,7 @@ class RegisterController {
 
     handle(
         request: Request, response: Response,
-        gameService: GameService, userService: UserService
+        userService: UserService
     ) {
         try {
             const newPlayerName: string = request.body.user;
@@ -15,7 +15,7 @@ class RegisterController {
             let newPlayer: Player = userService.createPlayer(newPlayerName);;
             let roomPass: string = 'GameRoom';
 
-            gameService.enterGame(newPlayer);
+            GameService.getInstance().enterGame(newPlayer);
 
             return response.status(201).json({
                 'playerId': newPlayer.id,

@@ -11,7 +11,6 @@ import { UserService } from './service/UserService';
 
 const routes = Router();
 
-const gameService: GameService = new GameService();
 const userService: UserService = UserService.getInstance();
 
 /**
@@ -23,27 +22,27 @@ const userService: UserService = UserService.getInstance();
  * with waiting list and game situation
  */
 routes.post('/register', (req, res) => {
-    new RegisterController().handle(req, res, gameService, userService);
+    new RegisterController().handle(req, res, userService);
 });
 
 routes.get('/gameinfo', (req, res) => {
-    new GetGameInfoController().handle(req, res, gameService);
+    new GetGameInfoController().handle(req, res);
 });
 
 routes.get('/waitingroom', (req, res) => {
-    new GetWaitingRoomController().handle(req, res, gameService);
+    new GetWaitingRoomController().handle(req, res);
 });
 
 routes.post('/botPlay', (req, res) => {
-    new BotTurnController().handle(req, res, gameService);
+    new BotTurnController().handle(req, res);
 });
 
 routes.post('/selection', (req, res) => {
-    new TurnController().handle(req, res, gameService);
+    new TurnController().handle(req, res);
 });
 
 routes.get('/reset', (req, res) => {
-    new ResetGameController().handle(req, res, gameService);
+    new ResetGameController().handle(req, res);
 });
 
 export default routes;

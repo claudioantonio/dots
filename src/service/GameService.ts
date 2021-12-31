@@ -4,14 +4,24 @@ import { SocketService } from "./SocketService";
 import { WaitingListService } from "./WaitingListService";
 
 class GameService {
+    private static INSTANCE: GameService;
     game: Game;
     waitingList: WaitingListService;
     lastPlayTimestamp: number;
 
-    constructor() {
+    private constructor() {
         this.game = new Game();
         this.lastPlayTimestamp = -1;
         this.waitingList = new WaitingListService();
+
+        GameService.INSTANCE = this;
+    }
+
+    static getInstance(): GameService {
+        if (!GameService.INSTANCE) {
+            return new GameService();
+        }
+        return GameService.INSTANCE;
     }
 
     enterGame(newPlayer: Player) {
