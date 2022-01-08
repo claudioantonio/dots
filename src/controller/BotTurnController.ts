@@ -18,7 +18,7 @@ class BotTurnController {
         const botPlayer: BotPlayer = GameService.getInstance().get().players[0] as BotPlayer;
         let playResult = botPlayer.play(GameService.getInstance().get());
         if (GameService.getInstance().get().isOver()) {
-            this.handleGameOver(request, playResult, GameService.getInstance());
+            this.handleGameOver(request, playResult);
         } else {
             SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
         }

@@ -4,7 +4,7 @@ import { RegisterController } from './controller/RegisterController';
 import { TurnController } from './controller/TurnController';
 import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
-import { BotTurnController } from './controller/BotTurnContoller';
+import { BotTurnController } from './controller/BotTurnController';
 import { ResetGameController } from './controller/ResetGameController';
 
 const routes = Router();
