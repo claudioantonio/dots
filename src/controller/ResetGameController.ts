@@ -3,6 +3,7 @@ import { GameService } from "../service/GameService";
 
 class ResetGameController {
     handle(request: Request, response: Response) {
+        console.log("ResetGameController was called");
         console.log('routes: before reset' + GameService.getInstance().get().players);
         GameService.getInstance().getWaitingList().reset();
         GameService.getInstance().get().reset();

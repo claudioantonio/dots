@@ -7,16 +7,16 @@ import Player from './Player';
 const GRID_SIZE = 6;
 const MAX_PLAYERS = 2;
 
-const PLAYER1:number = 0;
-const PLAYER2:number = 1;
+const PLAYER1: number = 0;
+const PLAYER2: number = 1;
 
 const BOTPLAYER_ID: number = 0;
 
-const STATUS_NOT_READY:number = 1;
-const STATUS_READY:number = 2;
-const STATUS_IN_PROGRESS:number = 3;
-const STATUS_OVER:number = 4;
-const STATUS_OVER_BY_DRAW:number = 5;
+const STATUS_NOT_READY: number = 1;
+const STATUS_READY: number = 2;
+const STATUS_IN_PROGRESS: number = 3;
+const STATUS_OVER: number = 4;
+const STATUS_OVER_BY_DRAW: number = 5;
 
 /**
  * Class to model the territory game
@@ -27,6 +27,7 @@ class Game {
     players: Player[] = [];
     turn: number = PLAYER1; // Player1 starts the game by default
     startTimestamp: number = -1;
+    lastPlay: Edge | undefined;
     lastPlayTimestamp: number = -1;
     message: string = "";
 
@@ -35,24 +36,24 @@ class Game {
         this.board = new Grid(GRID_SIZE);
     }
 
-    isBotGame () {
-        return (this.players[PLAYER1].id===BOTPLAYER_ID)? true : false;
+    isBotGame() {
+        return (this.players[PLAYER1].id === BOTPLAYER_ID) ? true : false;
     }
 
     isReady() {
-        return (this.status==STATUS_READY)? true : false;
+        return (this.status == STATUS_READY) ? true : false;
     }
 
     isInProgress() {
-        return (this.status==STATUS_IN_PROGRESS)? true : false;
+        return (this.status == STATUS_IN_PROGRESS) ? true : false;
     }
 
     isOver() {
-        return (this.status==STATUS_OVER||this.status==STATUS_OVER_BY_DRAW)? true : false;
+        return (this.status == STATUS_OVER || this.status == STATUS_OVER_BY_DRAW) ? true : false;
     }
 
     isOverByDraw() {
-        return (this.status==STATUS_OVER_BY_DRAW)? true : false;
+        return (this.status == STATUS_OVER_BY_DRAW) ? true : false;
     }
 
     getStatus() {
@@ -60,15 +61,15 @@ class Game {
     }
 
     canAddPlayer() {
-        return this.players.length<MAX_PLAYERS ? true : false;
+        return this.players.length < MAX_PLAYERS ? true : false;
     }
 
-    addPlayer(player:Player) {
+    addPlayer(player: Player) {
         if (!this.canAddPlayer()) return -1;
 
         this.players.push(player);
 
-        if (this.players.length==MAX_PLAYERS) this.status = STATUS_READY;
+        if (this.players.length == MAX_PLAYERS) this.status = STATUS_READY;
 
         console.log('Game: User ' + player.name + ' was registered');
         return;
@@ -104,13 +105,13 @@ class Game {
         return setup;
     }
 
-    getGameInfo(edge:Edge) {
+    getGameInfo() {
         let info = {
             player1Id: this.players[PLAYER1].id,
             score_player1: this.players[PLAYER1].score,
             score_player2: this.players[PLAYER2].score,
-            lastTurn: this.turn===PLAYER1? this.players[PLAYER2].id : this.players[PLAYER1].id,
-            lastPlay: edge,
+            lastTurn: this.turn === PLAYER1 ? this.players[PLAYER2].id : this.players[PLAYER1].id,
+            lastPlay: this.lastPlay,
             gameOver: this.isOver(),
             whatsNext: {}, // Instructions when game is over
             turn: this.getTurn(),
@@ -121,7 +122,7 @@ class Game {
     }
 
     getMessage() {
-        if (this.status==STATUS_OVER_BY_DRAW) {
+        if (this.status == STATUS_OVER_BY_DRAW) {
             return 'You both tied in the game!';
         } else {
             const winner = this.getWinner();
@@ -131,7 +132,7 @@ class Game {
 
     getLooser() {
         let winner = this.getWinner();
-        if (this.players[PLAYER1].id===winner!.id) {
+        if (this.players[PLAYER1].id === winner!.id) {
             return this.players[PLAYER2];
         } else {
             return this.players[PLAYER1];
@@ -139,22 +140,22 @@ class Game {
     }
 
     getWinner() {
-        let diffPoints:number = this.players[PLAYER1].score - this.players[PLAYER2].score;
-        
-        if (diffPoints===0) {
-          return null;
+        let diffPoints: number = this.players[PLAYER1].score - this.players[PLAYER2].score;
+
+        if (diffPoints === 0) {
+            return null;
         } else if (diffPoints < 0) {
-          return this.players[PLAYER2];
+            return this.players[PLAYER2];
         } else {
-          return this.players[PLAYER1];
+            return this.players[PLAYER1];
         }
     }
 
     // TODO Is it the best way to locate the player?
-    getPlayerIndex(playerId:number) {
-        let result:number=0;
-        this.players.forEach((player,index) => {
-            if (playerId==player.id) {
+    getPlayerIndex(playerId: number) {
+        let result: number = 0;
+        this.players.forEach((player, index) => {
+            if (playerId == player.id) {
                 result = index;
             }
         });
@@ -174,28 +175,29 @@ class Game {
     }
 
     updateStatus() {
-        if (this.board.hasOpenSquare()==false) {
-            this.status=(this.getWinner()==null)? STATUS_OVER_BY_DRAW : STATUS_OVER;
-            this.message=this.getMessage();
+        if (this.board.hasOpenSquare() == false) {
+            this.status = (this.getWinner() == null) ? STATUS_OVER_BY_DRAW : STATUS_OVER;
+            this.message = this.getMessage();
         }
     }
-  
-    play(playerId:number,edge:Edge) {
-        if (this.status===STATUS_READY) {
+
+    play(playerId: number, edge: Edge) {
+        if (this.status === STATUS_READY) {
             this.status = STATUS_IN_PROGRESS;
             this.startTimestamp = (new Date()).getTime();
         }
+        this.lastPlay = edge;
         this.lastPlayTimestamp = (new Date()).getTime();
 
         const playerIndex = this.getPlayerIndex(playerId);
         const player = this.players[playerIndex];
 
-        const nClosedSquares = this.board.conquerEdge(edge,player.name);
+        const nClosedSquares = this.board.conquerEdge(edge, player.name);
         player.updateScore(nClosedSquares);
 
         this.updateStatus();
         this.updateTurn();
-        return this.getGameInfo(edge);
+        return this.getGameInfo();
     }
 
     /**
@@ -204,16 +206,16 @@ class Game {
      * @param p1 Player 1
      * @param p2 Player 2
      */
-    newGame(p1:Player, p2:Player) {
+    newGame(p1: Player, p2: Player) {
         this.reset();
         p1.reset();
         p2.reset();
         if (p1 instanceof BotPlayer) { // Player1 will be the bot
             this.addPlayer(p1);
-            this.addPlayer(p2);    
+            this.addPlayer(p2);
         } else if (p2 instanceof BotPlayer) { //Player1 will be the bot
             this.addPlayer(p2);
-            this.addPlayer(p1);    
+            this.addPlayer(p1);
         } else { // Player1 will be the last game winner
             this.addPlayer(p1);
             this.addPlayer(p2);
@@ -227,7 +229,7 @@ class Game {
      * @param gridSize Number of vertical and horizontal points in grid
      */
     reset() {
-        this.board=new Grid(GRID_SIZE);
+        this.board = new Grid(GRID_SIZE);
         this.status = STATUS_NOT_READY;
         this.players = [];
         this.turn = PLAYER1;

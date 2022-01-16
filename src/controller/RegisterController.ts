@@ -4,6 +4,7 @@ import { GameService } from "../service/GameService";
 class RegisterController {
 
     handle(request: Request, response: Response) {
+        console.log("RegisterController was called");
         try {
             const newPlayerName: string = request.body.user;
             const newPlayerId = GameService.getInstance().enterGame(newPlayerName);

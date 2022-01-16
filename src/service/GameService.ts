@@ -1,3 +1,4 @@
+import { Socket } from "socket.io";
 import Game from "../logic/Game";
 import Player from "../logic/Player";
 import { SocketService } from "./SocketService";
@@ -15,6 +16,10 @@ class GameService {
         this.lastPlayTimestamp = -1;
         this.waitingList = new WaitingListService();
 
+        // Bind here is needed to give reference also to the GameService state
+        // instead of only to onPlayerExit function prototype
+        SocketService.getInstance().setDisconnectionListener(this.onPlayerExit.bind(this));
+
         GameService.INSTANCE = this;
     }
 
@@ -31,10 +36,7 @@ class GameService {
         if ((this.get().isReady()) || (this.get().isInProgress())) {
             // Must wait until the current game finishes
             this.getWaitingList().add(newPlayer);
-            SocketService.getInstance().broadcastMessage(
-                'waitingRoomUpdate',
-                { 'waitingList': this.getWaitingList().getAll() }
-            );
+            this.noticeWaitingListUpdate()
         } else {
             // Start playing immediately
             let player1: Player = this.getWaitingList().getFirst();
@@ -45,28 +47,24 @@ class GameService {
         return newPlayer.id;
     }
 
-    noticeNewGame(invitedPlayerId: number, reloadClient: boolean) {
+    noticeNewGame(invitedPlayerId: number) {
         // Invite first in waiting room to game room
         SocketService.getInstance().broadcastMessage(
             'enterGameRoom',
             { 'invitationForPlayer': invitedPlayerId }
         );
         // Send info to update waiting room
+        this.noticeWaitingListUpdate()
+    }
+
+    noticeWaitingListUpdate() {
         SocketService.getInstance().broadcastMessage(
             'waitingRoomUpdate',
             { 'waitingList': this.getWaitingList().getAll() }
         );
-        // Send event to reload clients page :-\
-        // TODO Complete page reload is not SPA behavior....
-        if (reloadClient) {
-            SocketService.getInstance().broadcastMessage(
-                'reloadGameRoom',
-                {}
-            );
-        }
     }
 
-    getWaitingList() {
+    getWaitingList(): WaitingListService {
         return this.waitingList;
     }
 
@@ -104,6 +102,42 @@ class GameService {
             gameOver: setup.gameOver,
             waitinglist: this.getWaitingList().getAll()
         });
+    }
+
+    onPlayerExit(playerId: number) {
+        console.log("onPlayerExit", "PlayerId=", playerId);
+        // Disconnected player was in waitinglist
+        const waitingPlayer = this.getWaitingList().remove(playerId);
+        if (waitingPlayer) {
+            this.noticeWaitingListUpdate();
+            return;
+        }
+        // Disconnected player was in a game
+        let disconnectedPlayer: Player;
+        let onlinePlayer: Player;
+        if (this.get().players[0].id == playerId) {
+            disconnectedPlayer = this.get().players[0];
+            onlinePlayer = this.get().players[1];
+        } else {
+            disconnectedPlayer = this.get().players[1];
+            onlinePlayer = this.get().players[0];
+        }
+
+        let playResult = this.get().getGameInfo();
+        playResult.gameOver = true; // TODO create function forceGameOver()
+        playResult.message = "Player " + disconnectedPlayer.name + " gave up!";
+        if (this.getWaitingList().getLength() > 0) {
+            // There is at least the bot in the waiting list
+            let playerInvited = this.getWaitingList().getFirst();
+            this.get().newGame(onlinePlayer, playerInvited);
+            this.noticeNewGame(playerInvited.id);
+            playResult.whatsNext = this.createPassport(playerInvited, 'GameRoom', disconnectedPlayer, 'ExitGame');
+            SocketService.getInstance().broadcastMessage('gameOver', playResult);
+        } else {
+            // Game with a bot with no one in the waiting list
+            this.get().reset();
+            this.getWaitingList().reset();
+        }
     }
 
     // TWO_DEAD_PLAYERS: number = 0;

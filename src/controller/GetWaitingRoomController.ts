@@ -3,6 +3,7 @@ import { GameService } from "../service/GameService";
 
 class GetWaitingRoomController {
     handle(request: Request, response: Response) {
+        console.log("GetWaitingRoomController was called");
         console.log(GameService.getInstance().get().players);
         let player1name: string;
         let player2name: string;

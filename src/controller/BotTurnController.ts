@@ -5,7 +5,7 @@ import { SocketService } from "../service/SocketService";
 
 class BotTurnController {
     handle(request: Request, response: Response) {
-        console.log('botPlay endpoint was called');
+        console.log('BotTurnController was called');
 
         GameService.getInstance().setPlayTime();
 
@@ -40,7 +40,7 @@ class BotTurnController {
             }
             // Keep winner in game room and send looser to the waiting room
             playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            GameService.getInstance().noticeNewGame(playerInvited.id, false);
+            GameService.getInstance().noticeNewGame(playerInvited.id);
         } else {
             // Start a new game with same players
             GameService.getInstance().get().newGame(winner!, looser);

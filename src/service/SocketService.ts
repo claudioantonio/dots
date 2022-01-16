@@ -1,17 +1,25 @@
 import { Server, Socket } from "socket.io";
 
+interface PlayerSocket {
+    playerId: number,
+    socketId: string
+}
+
 class SocketService {
     private static INSTANCE: SocketService;
 
     io: any;
-    disconnectListener: Function;
+    disconnectListener: Function | undefined;
 
-    constructor(httpServer: any, disconnectListener: Function, clientSocketHost: string) {
+    sockets: PlayerSocket[];
+
+    constructor(httpServer: any, clientSocketHost: string) {
         this.io = new Server();
-        this.disconnectListener = disconnectListener;
 
         this.setupCORS(httpServer, clientSocketHost);
         this.setupConnectionActions();
+
+        this.sockets = [];
 
         SocketService.INSTANCE = this;
     }
@@ -38,7 +46,11 @@ class SocketService {
             console.log("New Socket.io client connected");
 
             socket.on("disconnect", () => {
-                this.disconnectListener();
+                console.log("Socket ", socket.id, " disconnected");
+                const unregisteredPlayerId = this.unregisterPlayer(socket.id);
+                if (this.disconnectListener) {
+                    this.disconnectListener(unregisteredPlayerId);
+                }
             });
         });
     }
@@ -52,6 +64,32 @@ class SocketService {
 
     public broadcastMessage(name: string, messageObj: any) {
         this.io.emit(name, messageObj);
+    }
+
+    public setDisconnectionListener(listener: Function) {
+        this.disconnectListener = listener;
+    }
+
+    public registerPlayer(playerId: number, socketId: string) {
+        const player: PlayerSocket = { playerId, socketId };
+        this.sockets.push(player);
+        console.log('Registered sockets=', this.sockets);
+    }
+
+    public unregisterPlayer(socketId: string): number {
+        let newSockets: PlayerSocket[] = [];
+        let unregisterPlayerId;
+        this.sockets.forEach(player => {
+            if (player.socketId != socketId) {
+                newSockets.push(player);
+            } else {
+                unregisterPlayerId = player.playerId;
+            }
+        });
+        this.sockets = newSockets;
+        if (!unregisterPlayerId) throw new Error('Socket for player was not found');
+        console.log('Registered sockets=', this.sockets);
+        return unregisterPlayerId;
     }
 }
 

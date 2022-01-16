@@ -7,7 +7,7 @@ import { SocketService } from "../service/SocketService";
 class TurnController {
 
     handle(request: Request, response: Response) {
-        console.log('selection endpoint called');
+        console.log('TurnController was called');
 
         const playerId: number = request.body.player;
         if (GameService.getInstance().get().getTurn() != playerId) {
@@ -37,11 +37,13 @@ class TurnController {
                 console.log('Gameover with winner');
                 this.handleGameOver(request, playResult);
             }
+            SocketService.getInstance().broadcastMessage('gameOver', playResult);
+        } else {
+            SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
         }
 
-        SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
 
-        return response.status(201).json(playResult);
+        return response.sendStatus(201);
     }
 
     private handleGameOverByDraw(req: any, playResult: any) {
@@ -66,7 +68,7 @@ class TurnController {
             }
             // Keep winner in game room and send looser to the waiting room
             playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            GameService.getInstance().noticeNewGame(playerInvited.id, false);
+            GameService.getInstance().noticeNewGame(playerInvited.id);
         } else {
             // Start a new game with same players
             GameService.getInstance().get().newGame(winner!, looser);

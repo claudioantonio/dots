@@ -6,6 +6,7 @@ import { GetGameInfoController } from './controller/GetGameInfoController';
 import { GetWaitingRoomController } from './controller/GetWaitingRoomController';
 import { BotTurnController } from './controller/BotTurnController';
 import { ResetGameController } from './controller/ResetGameController';
+import { PingController } from './controller/PingController';
 
 const routes = Router();
 
@@ -19,6 +20,10 @@ const routes = Router();
  */
 routes.post('/register', (req, res) => {
     new RegisterController().handle(req, res);
+});
+
+routes.post('/ping', (req, res) => {
+    new PingController().handle(req, res);
 });
 
 routes.get('/gameinfo', (req, res) => {

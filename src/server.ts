@@ -16,7 +16,6 @@ const httpServer = http.createServer(app);
 
 const socketService: SocketService = new SocketService(
     httpServer,
-    () => { console.log("A user disconnected") },
     CLIENT_HOST_SOCKETIO
 );
 
