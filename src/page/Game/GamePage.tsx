@@ -29,6 +29,7 @@ function GamePage() {
   const history = useHistory();
 
   const [socketConnected, setSocketConnected] = useState(false);
+  const [socketId, setSocketId] = useState('');
 
   const [player1Id, setPlayer1Id] = useState('-1');
   const [player1Name, setPlayer1Name] = useState('');
@@ -43,12 +44,22 @@ function GamePage() {
 
   const [currentTurn, setCurrentTurn] = useState(player1Id);
   const [waitingList, setWaitingList] = useState<any[]>([]);
-  const [gameData, setGameData] = useState<PlayData[]>([]);
+  let [gameData, setGameData] = useState<PlayData[]>([]);
 
   /**
    * =============================================================
    * REST Stuff
    */
+
+  async function pingServer() {
+    await api
+      .post("ping",
+        {
+          'playerId': myPlayerId,
+          'socketId': socketId
+        });
+  }
+
   function fetchGameInfo() {
     api
       .get("gameinfo")
@@ -71,7 +82,7 @@ function GamePage() {
     try {
       console.log('SENDBOTPLAY');
       api.post("botplay");
-    } catch (error) {
+    } catch (error: any) {
       console.log(error.response);
       console.log(error.request);
     }
@@ -85,14 +96,16 @@ function GamePage() {
     if (gridEdge == null) return;
     try {
       console.log('SENDPLAY - Player ' + myPlayerId + ' did a move');
+      console.log('DEBUG', socketId);
       api.post("selection", {
         'x1': gridEdge.x1,
         'y1': gridEdge.y1,
         'x2': gridEdge.x2,
         'y2': gridEdge.y2,
         'player': myPlayerId,
+        'connectionId': socketId
       });
-    } catch (error) {
+    } catch (error: any) {
       console.log(error.response);
       console.log(error.request);
     }
@@ -112,6 +125,7 @@ function GamePage() {
 
     socket.on('connect', () => {
       console.log('CONNECT event arrived');
+      setSocketId(socket.id);
       setSocketConnected(true);
     });
 
@@ -125,10 +139,9 @@ function GamePage() {
       setWaitingList(response.waitingList);
     });
 
-    socket.on('emptyGameRoom', (response:any) => {
-      console.log('EMPTYGAMEROOM event arrived');
-      socket.disconnect();
-      history.push("/");
+    socket.on('gameOver', (response: any) => {
+      console.log('GAMEOVER event arrived');
+      handleGameOver(response);
     });
 
     // CLEAN UP THE EFFECT
@@ -147,11 +160,7 @@ function GamePage() {
     console.log(lastPlay);
     updateGameData(lastPlay);
     updateScore(lastPlay.score_player1, lastPlay.score_player2);
-    if (lastPlay.gameOver === true) {
-      handleGameOver(lastPlay);
-    } else {
-      setCurrentTurn(lastPlay.turn);
-    }
+    setCurrentTurn(lastPlay.turn);
   }
 
   function updateGameData(lastPlay: any) {
@@ -178,7 +187,10 @@ function GamePage() {
 
   function handleGameOver(lastPlay: any) {
     window.alert(lastPlay.message);
-    window.location.reload();
+    setGameData([]);
+    document.getElementById("redraw")?.click();
+    updateScore('0', '0');
+    fetchGameInfo();
   }
 
 
@@ -192,6 +204,7 @@ function GamePage() {
   useEffect(() => {
     if (socketConnected) {
       console.log('EFFECT - Fetching game setup');
+      pingServer();
       fetchGameInfo();
       console.log('--- Fetching game setup executed');
     }

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createTextChangeRange } from 'typescript';
 import Edge from '../../logic/Edge';
 import PlayData from '../../logic/PlayData';
 
@@ -77,15 +78,15 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
 
       const columnItem = reachColumn(pos.x)
       if (columnItem != null) {
-        let screenEdge=findAdjacentYPoints(columnItem, pos.y);
-        if (screenEdge!=null) onClick(convertScreenToGrid(screenEdge));
+        let screenEdge = findAdjacentYPoints(columnItem, pos.y);
+        if (screenEdge != null) onClick(convertScreenToGrid(screenEdge));
         return;
       }
 
       const rowItem = reachRow(pos.y)
       if (rowItem != null) {
-        let screenEdge=findAdjacentXPoints(rowItem, pos.x)
-        if (screenEdge!=null) onClick(convertScreenToGrid(screenEdge));
+        let screenEdge = findAdjacentXPoints(rowItem, pos.x)
+        if (screenEdge != null) onClick(convertScreenToGrid(screenEdge));
         return;
       }
     }, false);
@@ -310,6 +311,12 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
     }
   }
 
+  function clearBoard() {
+    const ctx = getCanvasCtx();
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawGrid(ctx);
+  }
+
   function drawMoves(ctx: any) {
     data.forEach((playData: PlayData) => {
       let screenEdge: Edge = convertGridToScreen(playData.move);
@@ -318,7 +325,7 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
   }
 
   useEffect(() => {
-    if (gridSize===0) return;
+    if (gridSize == 0) return;
     console.log('EFFECT - Draw grid and install listeners')
     const canvasCtx = getCanvasCtx();
     drawGrid(canvasCtx);
@@ -342,6 +349,7 @@ const GameBoard: React.FC<GameBoardProps> = (props) => {
         width={canvasWidth}
         height={canvasHeight}>
       </canvas>
+      <input type="button" hidden={true} id="redraw" onClick={clearBoard}></input>
     </div>
   );
 };
