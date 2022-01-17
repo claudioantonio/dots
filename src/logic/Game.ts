@@ -201,6 +201,14 @@ class Game {
     }
 
     /**
+     * Force a game to end
+     * Used when a player disconnects during a game
+     */
+    forceGameOver() {
+        this.status = STATUS_OVER;
+    }
+
+    /**
      * Prepare a new game
      * TODO Do botplayer always need to be player1?
      * @param p1 Player 1

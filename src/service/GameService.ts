@@ -123,9 +123,9 @@ class GameService {
             onlinePlayer = this.get().players[0];
         }
 
+        this.get().forceGameOver();
         let playResult = this.get().getGameInfo();
-        playResult.gameOver = true; // TODO create function forceGameOver()
-        playResult.message = "Player " + disconnectedPlayer.name + " gave up!";
+        playResult.message = disconnectedPlayer.name + " gave up. " + onlinePlayer.name + " won!";
         if (this.getWaitingList().getLength() > 0) {
             // There is at least the bot in the waiting list
             let playerInvited = this.getWaitingList().getFirst();
