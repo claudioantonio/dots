@@ -2,8 +2,8 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from './swagger.json';
+//import swaggerUi from 'swagger-ui-express';
+//import swaggerDocument from './swagger.json';
 
 import { SocketService } from './service/SocketService';
 import routes from './routes';
