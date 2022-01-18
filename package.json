@@ -15,7 +15,6 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "socket.io": "^3.0.4",
-    "swagger-ui-express": "^4.2.0",
     "ts-node-dev": "^1.1.1",
     "typescript": "^4.1.3"
   },
