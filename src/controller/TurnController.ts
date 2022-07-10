@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Edge from "../logic/Edge";
 import Point from "../logic/Point";
+import { PlayTurnUseCase } from "../useCase/PlayTurnUseCase";
 import { GameService } from "../service/GameService";
 import { SocketService } from "../service/SocketService";
 
@@ -16,64 +17,28 @@ class TurnController {
             });
         }
 
-        GameService.getInstance().setPlayTime();
+        let edge: Edge = this.buildEdge(
+            request.body.x1,
+            request.body.y1,
+            request.body.x2,
+            request.body.y2
+        );
 
-        const x1: number = request.body.x1;
-        const y1: number = request.body.y1
-        const x2: number = request.body.x2;
-        const y2: number = request.body.y2
-
-        const p1: Point = new Point(x1, y1);
-        const p2: Point = new Point(x2, y2);
-        const edge: Edge = new Edge(p1, p2);
-
-        let playResult = GameService.getInstance().get().play(playerId, edge);
-
-        if (GameService.getInstance().get().isOver()) {
-            if (GameService.getInstance().get().isOverByDraw()) {
-                console.log('Gameover by draw');
-                this.handleGameOverByDraw(request, playResult);
-            } else {
-                console.log('Gameover with winner');
-                this.handleGameOver(request, playResult);
-            }
-            SocketService.getInstance().broadcastMessage('gameOver', playResult);
-        } else {
-            SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
-        }
-
+        new PlayTurnUseCase().execute(playerId, edge);
 
         return response.sendStatus(201);
     }
 
-    private handleGameOverByDraw(req: any, playResult: any) {
-        const p1 = GameService.getInstance().get().players[0];
-        const p2 = GameService.getInstance().get().players[1];
-        GameService.getInstance().get().newGame(p1, p2);
-        playResult.whatsNext = GameService.getInstance().createPassport(p1, 'GameRoom', p2, 'GameRoom');
-    }
+    private buildEdge(rx1: any, ry1: any, rx2: any, ry2: any) {
+        const x1: number = rx1;
+        const y1: number = ry1;
+        const x2: number = rx2;
+        const y2: number = ry2;
 
-    // TODO - REFACTOR FOR GOD SAKE!!!
-    private handleGameOver(req: any, playResult: any) {
-        const winner = GameService.getInstance().get().getWinner();
-        const looser = GameService.getInstance().get().getLooser();
+        const p1: Point = new Point(x1, y1);
+        const p2: Point = new Point(x2, y2);
 
-        if (GameService.getInstance().getWaitingList().getLength() > 0) {
-            // Add looser to waiting list
-            GameService.getInstance().getWaitingList().add(looser);
-            // Prepare new game
-            let playerInvited = GameService.getInstance().getWaitingList().getFirst();
-            if (winner != null) {
-                GameService.getInstance().get().newGame(winner, playerInvited);
-            }
-            // Keep winner in game room and send looser to the waiting room
-            playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'waitingRoom');
-            GameService.getInstance().noticeNewGame(playerInvited.id);
-        } else {
-            // Start a new game with same players
-            GameService.getInstance().get().newGame(winner!, looser);
-            playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'GameRoom');
-        }
+        return new Edge(p1, p2);
     }
 }
 
