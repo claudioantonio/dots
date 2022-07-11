@@ -2,30 +2,17 @@ import BotPlayer from './BotPlayer';
 import Edge from './Edge';
 import Grid from './Grid';
 import Player from './Player';
+import { GameConstants } from './GameConstants';
 
-
-const GRID_SIZE = 6;
-const MAX_PLAYERS = 2;
-
-const PLAYER1: number = 0;
-const PLAYER2: number = 1;
-
-const BOTPLAYER_ID: number = 0;
-
-const STATUS_NOT_READY: number = 1;
-const STATUS_READY: number = 2;
-const STATUS_IN_PROGRESS: number = 3;
-const STATUS_OVER: number = 4;
-const STATUS_OVER_BY_DRAW: number = 5;
 
 /**
  * Class to model the territory game
  */
 class Game {
     board: Grid;
-    status: number = STATUS_NOT_READY;
+    status: number = GameConstants.STATUS_NOT_READY;
     players: Player[] = [];
-    turn: number = PLAYER1; // Player1 starts the game by default
+    turn: number = GameConstants.PLAYER1; // Player1 starts the game by default
     startTimestamp: number = -1;
     lastPlay: Edge | undefined;
     lastPlayTimestamp: number = -1;
@@ -33,27 +20,27 @@ class Game {
 
 
     constructor() {
-        this.board = new Grid(GRID_SIZE);
+        this.board = new Grid(GameConstants.GRID_SIZE);
     }
 
     isBotGame() {
-        return (this.players[PLAYER1].id === BOTPLAYER_ID) ? true : false;
+        return (this.players[GameConstants.PLAYER1].id === GameConstants.BOTPLAYER_ID) ? true : false;
     }
 
     isReady() {
-        return (this.status == STATUS_READY) ? true : false;
+        return (this.status == GameConstants.STATUS_READY) ? true : false;
     }
 
     isInProgress() {
-        return (this.status == STATUS_IN_PROGRESS) ? true : false;
+        return (this.status == GameConstants.STATUS_IN_PROGRESS) ? true : false;
     }
 
     isOver() {
-        return (this.status == STATUS_OVER || this.status == STATUS_OVER_BY_DRAW) ? true : false;
+        return (this.status == GameConstants.STATUS_OVER || this.status == GameConstants.STATUS_OVER_BY_DRAW) ? true : false;
     }
 
     isOverByDraw() {
-        return (this.status == STATUS_OVER_BY_DRAW) ? true : false;
+        return (this.status == GameConstants.STATUS_OVER_BY_DRAW) ? true : false;
     }
 
     getStatus() {
@@ -61,7 +48,7 @@ class Game {
     }
 
     canAddPlayer() {
-        return this.players.length < MAX_PLAYERS ? true : false;
+        return this.players.length < GameConstants.MAX_PLAYERS ? true : false;
     }
 
     addPlayer(player: Player) {
@@ -69,7 +56,7 @@ class Game {
 
         this.players.push(player);
 
-        if (this.players.length == MAX_PLAYERS) this.status = STATUS_READY;
+        if (this.players.length == GameConstants.MAX_PLAYERS) this.status = GameConstants.STATUS_READY;
 
         console.log('Game: User ' + player.name + ' was registered');
         return;
@@ -79,7 +66,7 @@ class Game {
      * Change turn to the next player
      */
     updateTurn() {
-        this.turn = (this.turn == PLAYER1) ? PLAYER2 : PLAYER1;
+        this.turn = (this.turn == GameConstants.PLAYER1) ? GameConstants.PLAYER2 : GameConstants.PLAYER1;
     }
 
     /**
@@ -93,12 +80,12 @@ class Game {
     // TODO return Player class instead of individual attrs
     getGameSetup() {
         let setup = {
-            gridsize: GRID_SIZE,
-            player1Id: this.players[PLAYER1].id,
-            player1: this.players[PLAYER1].name,
-            player2: this.players[PLAYER2].name,
-            score_player1: this.players[PLAYER1].score,
-            score_player2: this.players[PLAYER2].score,
+            gridsize: GameConstants.GRID_SIZE,
+            player1Id: this.players[GameConstants.PLAYER1].id,
+            player1: this.players[GameConstants.PLAYER1].name,
+            player2: this.players[GameConstants.PLAYER2].name,
+            score_player1: this.players[GameConstants.PLAYER1].score,
+            score_player2: this.players[GameConstants.PLAYER2].score,
             turn: this.getTurn(),
             gameOver: (this.isOver()),
         };
@@ -107,13 +94,16 @@ class Game {
 
     getGameInfo() {
         let info = {
-            player1Id: this.players[PLAYER1].id,
-            score_player1: this.players[PLAYER1].score,
-            score_player2: this.players[PLAYER2].score,
-            lastTurn: this.turn === PLAYER1 ? this.players[PLAYER2].id : this.players[PLAYER1].id,
+            player1Id: this.players[GameConstants.PLAYER1].id,
+            score_player1: this.players[GameConstants.PLAYER1].score,
+            score_player2: this.players[GameConstants.PLAYER2].score,
+            lastTurn: this.turn === GameConstants.PLAYER1 ? this.players[GameConstants.PLAYER2].id : this.players[GameConstants.PLAYER1].id,
             lastPlay: this.lastPlay,
+            // TODO Check if it is possible to use only gameStatus
             gameOver: this.isOver(),
-            whatsNext: {}, // Instructions when game is over
+            gameStatus: this.status,
+            // ----------------------------------------------
+            whatsNext: {}, // Instructions when game is over (it should not be here!)
             turn: this.getTurn(),
             message: this.message,
         };
@@ -122,7 +112,7 @@ class Game {
     }
 
     getMessage() {
-        if (this.status == STATUS_OVER_BY_DRAW) {
+        if (this.status == GameConstants.STATUS_OVER_BY_DRAW) {
             return 'You both tied in the game!';
         } else {
             const winner = this.getWinner();
@@ -132,22 +122,22 @@ class Game {
 
     getLooser() {
         let winner = this.getWinner();
-        if (this.players[PLAYER1].id === winner!.id) {
-            return this.players[PLAYER2];
+        if (this.players[GameConstants.PLAYER1].id === winner!.id) {
+            return this.players[GameConstants.PLAYER2];
         } else {
-            return this.players[PLAYER1];
+            return this.players[GameConstants.PLAYER1];
         }
     }
 
     getWinner() {
-        let diffPoints: number = this.players[PLAYER1].score - this.players[PLAYER2].score;
+        let diffPoints: number = this.players[GameConstants.PLAYER1].score - this.players[GameConstants.PLAYER2].score;
 
         if (diffPoints === 0) {
             return null;
         } else if (diffPoints < 0) {
-            return this.players[PLAYER2];
+            return this.players[GameConstants.PLAYER2];
         } else {
-            return this.players[PLAYER1];
+            return this.players[GameConstants.PLAYER1];
         }
     }
 
@@ -176,14 +166,14 @@ class Game {
 
     updateStatus() {
         if (this.board.hasOpenSquare() == false) {
-            this.status = (this.getWinner() == null) ? STATUS_OVER_BY_DRAW : STATUS_OVER;
+            this.status = (this.getWinner() == null) ? GameConstants.STATUS_OVER_BY_DRAW : GameConstants.STATUS_OVER;
             this.message = this.getMessage();
         }
     }
 
     play(playerId: number, edge: Edge) {
-        if (this.status === STATUS_READY) {
-            this.status = STATUS_IN_PROGRESS;
+        if (this.status === GameConstants.STATUS_READY) {
+            this.status = GameConstants.STATUS_IN_PROGRESS;
             this.startTimestamp = (new Date()).getTime();
         }
         this.lastPlay = edge;
@@ -205,7 +195,7 @@ class Game {
      * Used when a player disconnects during a game
      */
     forceGameOver() {
-        this.status = STATUS_OVER;
+        this.status = GameConstants.STATUS_OVER;
     }
 
     /**
@@ -237,10 +227,10 @@ class Game {
      * @param gridSize Number of vertical and horizontal points in grid
      */
     reset() {
-        this.board = new Grid(GRID_SIZE);
-        this.status = STATUS_NOT_READY;
+        this.board = new Grid(GameConstants.GRID_SIZE);
+        this.status = GameConstants.STATUS_NOT_READY;
         this.players = [];
-        this.turn = PLAYER1;
+        this.turn = GameConstants.PLAYER1;
         this.startTimestamp = -1;
         this.lastPlayTimestamp = -1;
         this.message = "";

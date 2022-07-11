@@ -3,7 +3,6 @@ import Edge from "../logic/Edge";
 import Point from "../logic/Point";
 import { PlayTurnUseCase } from "../useCase/PlayTurnUseCase";
 import { GameService } from "../service/GameService";
-import { SocketService } from "../service/SocketService";
 
 class TurnController {
 
@@ -17,6 +16,7 @@ class TurnController {
             });
         }
 
+        // TODO: Receive a better designed object to avoid processing on controller
         let edge: Edge = this.buildEdge(
             request.body.x1,
             request.body.y1,
