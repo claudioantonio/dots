@@ -1,44 +1,27 @@
+import BotPlayer from "../logic/BotPlayer";
 import Edge from "../logic/Edge";
 import { GameConstants } from "../logic/GameConstants";
 import { GameService } from "../service/GameService";
 import { SocketService } from "../service/SocketService";
 
-export class PlayTurnUseCase {
+export class BotPlayTurnUseCase {
 
-    async execute(playerId: number, edge: Edge) {
+    async execute() {
         console.log("BotPlayTurnUseCase was called");
 
         GameService.getInstance().setPlayTime();
 
-        let playResult = GameService.getInstance().get().play(playerId, edge);
-
-        // TODO Use playresult.gamestatus in broadcastmessage to make it clean and lean
-        let status: string;
-        if (playResult.gameStatus == GameConstants.STATUS_IN_PROGRESS) {
-            console.log('Game is ongoing');
-            status = 'gameUpdate';
-        } else if (playResult.gameStatus == GameConstants.STATUS_OVER) {
-            console.log('Gameover with winner');
-            status = 'gameOver';
+        const botPlayer: BotPlayer = GameService.getInstance().get().players[0] as BotPlayer;
+        let playResult = botPlayer.play(GameService.getInstance().get());
+        if (GameService.getInstance().get().isOver()) {
             this.handleGameOver(playResult);
-        } else if (playResult.gameStatus == GameConstants.STATUS_OVER_BY_DRAW) {
-            console.log('Gameover by draw');
-            status = 'gameOver';
-            this.handleGameOverByDraw(playResult);
         } else {
-            throw new Error("Invalid status received");
+            SocketService.getInstance().broadcastMessage('gameUpdate', playResult);
         }
-        SocketService.getInstance().broadcastMessage(status, playResult);
+        return playResult;
     }
 
-    private handleGameOverByDraw(playResult: any) {
-        const p1 = GameService.getInstance().get().players[0];
-        const p2 = GameService.getInstance().get().players[1];
-        GameService.getInstance().get().newGame(p1, p2);
-        playResult.whatsNext = GameService.getInstance().createPassport(p1, 'GameRoom', p2, 'GameRoom');
-    }
-
-    // TODO - REFACTOR FOR GOD SAKE!!!
+    // TODO - Duplicated in TurnController
     private handleGameOver(playResult: any) {
         const winner = GameService.getInstance().get().getWinner();
         const looser = GameService.getInstance().get().getLooser();
@@ -59,5 +42,6 @@ export class PlayTurnUseCase {
             GameService.getInstance().get().newGame(winner!, looser);
             playResult.whatsNext = GameService.getInstance().createPassport(winner!, 'GameRoom', looser, 'GameRoom');
         }
+        console.log('whats next?', playResult.whatsNext);
     }
 }
