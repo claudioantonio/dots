@@ -1,4 +1,3 @@
-import { throws } from "assert";
 import Edge from "../logic/Edge";
 import { GameConstants } from "../logic/GameConstants";
 import { GameService } from "../service/GameService";
