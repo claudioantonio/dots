@@ -87,7 +87,7 @@ class SocketService {
             }
         });
         this.sockets = newSockets;
-        if (!unregisterPlayerId) throw new Error('Socket for player was not found');
+        if (!unregisterPlayerId) throw new Error('Socket for player to be disconnected was not found');
         console.log('Registered sockets=', this.sockets);
         return unregisterPlayerId;
     }
