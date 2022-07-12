@@ -11,6 +11,5 @@ export class BotPlayTurnUseCase extends AbstractTurnUseCase {
         const botPlayer: BotPlayer = GameService.getInstance().get().players[0] as BotPlayer;
         let playResult = botPlayer.play(GameService.getInstance().get());
         this.resultHandler(playResult);
-        return playResult;
     }
 }

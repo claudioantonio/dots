@@ -14,9 +14,9 @@ class BotTurnController {
             });
         }
 
-        let playResult = new BotPlayTurnUseCase().execute();
+        new BotPlayTurnUseCase().execute();
 
-        return response.status(201).json(playResult);
+        return response.sendStatus(201);
     }
 }
 
