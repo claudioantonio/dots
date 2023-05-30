@@ -1,12 +1,8 @@
 {
-"name": "dots",
-"version": "1.0.0",
-"description": "",
-"main": "index.js",
-"scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
-"keywords": [],
-"author": "",
-"license": "ISC"
+  "name": "dots",
+  "version": "1.0.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "turbo run dev"
+  }
 }
