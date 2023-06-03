@@ -16,6 +16,9 @@ class UserService {
     }
 
     createPlayer(name: string): Player {
+        if (name == "") {
+            throw new Error("Cannot create a player with an empty name");
+        }
         let id = this.createPlayerId();
         return new Player(id, name);
     }
