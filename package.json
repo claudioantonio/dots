@@ -1,8 +1,13 @@
 {
   "name": "dots",
   "version": "1.0.0",
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev": "turbo run dev"
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.26.1"
   }
 }
